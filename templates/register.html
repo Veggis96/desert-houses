@@ -6,18 +6,25 @@
 <section class="panel auth-panel">
     <p class="eyebrow">A new beginning</p>
     <h1>Choose Your House</h1>
-    <p class="auth-intro muted">Every great house starts with a single settlement.</p>
+    <p class="auth-intro muted">Create an account, choose your faction, and start with one settlement. Your faction choice is permanent.</p>
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
         <label for="username">Username</label>
-        <input id="username" name="username" required autocomplete="username">
+        <input id="username" name="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_-]{3,24}" autocomplete="username" value="{{ entered_username }}" aria-describedby="username-help">
+        <small id="username-help">3–24 letters, numbers, underscores or hyphens. Names are unique regardless of capitalization.</small>
 
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" required autocomplete="new-password">
+        <input id="password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password" aria-describedby="password-help">
+        <small id="password-help">Use 10–128 characters. A long, unique passphrase works well.</small>
+        <label for="confirm_password">Confirm password</label>
+        <input id="confirm_password" name="confirm_password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
+        {% if invite_required %}<label for="invite_code">Game invite code</label>
+        <input id="invite_code" name="invite_code" type="password" required autocomplete="off">{% endif %}
 
         <div class="faction-list">
             {% for faction in factions %}
                 <label class="faction-card">
-                    <input type="radio" name="faction" value="{{ faction.slug }}" required {% if loop.first %}checked{% endif %}>
+                    <input type="radio" name="faction" value="{{ faction.slug }}" required {% if faction.slug == selected_faction %}checked{% endif %}>
                     <strong>{{ faction.name }}</strong>
                     <span>{{ faction.description }}</span>
                 </label>

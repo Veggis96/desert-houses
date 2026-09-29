@@ -25,8 +25,11 @@ class EarlyGameTests(unittest.TestCase):
                     game.app.config["TESTING"] = True
                     game.init_db()
                     client = game.app.test_client()
-                    client.post("/register", data={"username": "player", "password": "test-password", "faction": faction})
-                    client.post("/login", data={"username": "player", "password": "test-password"})
+                    client.get("/register")
+                    with client.session_transaction() as account_session:
+                        signup_token = account_session["auth_csrf_token"]
+                    client.post("/register", data={"username": "player", "password": "test-password", "confirm_password": "test-password", "csrf_token": signup_token, "faction": faction})
+                    client.post("/login", data={"username": "player", "password": "test-password", "csrf_token": signup_token})
                     def snapshot():
                         with game.get_db() as db:
                             user = db.execute("SELECT * FROM users WHERE username = 'player'").fetchone()

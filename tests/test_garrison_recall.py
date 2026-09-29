@@ -25,8 +25,11 @@ class GarrisonRecallTests(unittest.TestCase):
         game.app.config["TESTING"] = True
         game.init_db()
         self.client = game.app.test_client()
-        self.client.post("/register", data={"username": "commander", "password": "test-password", "faction": "atreides"})
-        self.client.post("/login", data={"username": "commander", "password": "test-password"})
+        self.client.get("/register")
+        with self.client.session_transaction() as account_session:
+            signup_token = account_session["auth_csrf_token"]
+        self.client.post("/register", data={"username": "commander", "password": "test-password", "confirm_password": "test-password", "csrf_token": signup_token, "faction": "atreides"})
+        self.client.post("/login", data={"username": "commander", "password": "test-password", "csrf_token": signup_token})
         with game.get_db() as db:
             user = db.execute("SELECT id FROM users WHERE username = 'commander'").fetchone()
             village = game.get_village(db, user["id"])

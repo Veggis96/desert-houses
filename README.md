@@ -100,3 +100,11 @@ Alliance leaders and officers can set a target of 1–20 controlled Large Spice 
 ## Development and production configuration
 
 Development tools and debug mode are disabled by default. Session signing uses `SECRET_KEY`, or a random per-process key for local development. Set a persistent secret for stable sessions across restarts/workers. See [configuration details](docs/CONFIGURATION.md).
+
+## Player accounts
+
+New players choose a permanent faction, a 3–24 character username (letters, numbers, `_`, `-`), and a confirmed password/passphrase of 10–128 characters. Names cannot duplicate an existing username by capitalization. Login accepts capitalization differences for unambiguous names while retaining exact-match access to legacy accounts.
+
+Account creation assigns a settlement/map position atomically. Full worlds reject sign-up without leaving an incomplete account; player-controlled blooms are not replaced by new settlements. Sign-up/login forms include CSRF protection and persistent rate limits.
+
+Registration is open by default. Set `REGISTRATION_INVITE_CODE` in the server environment to require a shared invitation code for a private playtest. Password recovery remains the protected local host tool; email verification/recovery is not configured.

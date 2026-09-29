@@ -15,6 +15,7 @@
     <h2>Welcome back.</h2>
     <p class="auth-intro muted">Enter your credentials to return to your settlement.</p>
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
         <label for="username">Username</label>
         <input id="username" name="username" required autocomplete="username" placeholder="Your username">
 

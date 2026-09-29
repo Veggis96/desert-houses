@@ -4,6 +4,8 @@ import os
 import random
 import sqlite3
 import secrets
+import hashlib
+import re
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -18,7 +20,7 @@ app = Flask(__name__)
 if os.environ.get("GAME_ENV") == "production" and not os.environ.get("SECRET_KEY"):
     raise RuntimeError("Set SECRET_KEY before starting in production.")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
+app.config.update(MAX_CONTENT_LENGTH=64 * 1024, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
                   SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
 
 
@@ -966,6 +968,8 @@ def init_db():
             """
         )
 
+        db.execute("CREATE TABLE IF NOT EXISTS auth_attempts (bucket TEXT NOT NULL, attempted_at REAL NOT NULL)")
+        db.execute("CREATE INDEX IF NOT EXISTS auth_attempts_bucket_time ON auth_attempts(bucket, attempted_at)")
         db.execute("""CREATE TABLE IF NOT EXISTS alliance_spice_objectives (
             alliance_id INTEGER PRIMARY KEY, target_blooms INTEGER NOT NULL DEFAULT 3,
             FOREIGN KEY (alliance_id) REFERENCES alliances(id))""")
@@ -1578,7 +1582,7 @@ def ensure_village_map_position(db, village):
                 if max(abs(x), abs(y)) != radius:
                     continue
                 tile = db.execute(
-                    "SELECT * FROM map_tiles WHERE x = ? AND y = ? AND village_id IS NULL",
+                    "SELECT * FROM map_tiles WHERE x = ? AND y = ? AND village_id IS NULL AND controller_village_id IS NULL",
                     (x, y),
                 ).fetchone()
                 if tile:
@@ -2776,50 +2780,130 @@ def index():
     return redirect(url_for("login"))
 
 
+DUMMY_PASSWORD_HASH = generate_password_hash("unused-login-timing-password")
+
+
+@app.context_processor
+def inject_auth_token():
+    if "auth_csrf_token" not in session:
+        session["auth_csrf_token"] = secrets.token_hex(32)
+    return {"auth_csrf_token": session["auth_csrf_token"]}
+
+
+@app.before_request
+def protect_account_forms():
+    if request.method == "POST" and request.endpoint in ("register", "login"):
+        token = session.get("auth_csrf_token", "")
+        if not token or not secrets.compare_digest(token.encode(), request.form.get("csrf_token", "").encode()):
+            abort(400, description="This account form expired. Refresh the page and try again.")
+
+
+def allow_auth_attempt(action, username=""):
+    """Persistent rate limits; direct client address only, no trusted forwarding headers."""
+    address = request.remote_addr or "unknown"
+    digest = lambda text: hashlib.sha256(text.encode("utf-8")).hexdigest()
+    limits = [(action + ":ip:" + digest(address), 20 if action == "register" else 30, 3600 if action == "register" else 900)]
+    if action == "login":
+        limits.append(("login:account:" + digest(address + ":" + username.lower()), 8, 900))
+    now = utc_now().timestamp()
+    with get_db() as db:
+        db.execute("BEGIN IMMEDIATE")
+        db.execute("DELETE FROM auth_attempts WHERE attempted_at < ?", (now - 3600,))
+        for bucket, limit, window in limits:
+            count = db.execute("SELECT COUNT(*) FROM auth_attempts WHERE bucket = ? AND attempted_at > ?", (bucket, now - window)).fetchone()[0]
+            if count >= limit:
+                db.commit()
+                return False
+        db.executemany("INSERT INTO auth_attempts (bucket, attempted_at) VALUES (?, ?)", [(bucket, now) for bucket, _, _ in limits])
+        db.commit()
+    return True
+
+
+def valid_signup_password(password):
+    return 10 <= len(password) <= 128 and bool(password.strip())
+
+
 @app.route("/register", methods=("GET", "POST"))
 def register():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    username = request.form.get("username", "").strip() if request.method == "POST" else ""
+    faction_slug = request.form.get("faction", "atreides")
+    status = 200
+    invite_code = os.environ.get("REGISTRATION_INVITE_CODE", "")
     with get_db() as db:
         factions = db.execute("SELECT * FROM factions ORDER BY id").fetchall()
         if request.method == "POST":
-            username = request.form["username"].strip()
-            password = request.form["password"]
-            faction_slug = request.form["faction"]
+            password = request.form.get("password", "")
+            confirmation = request.form.get("confirm_password", "")
             faction = db.execute("SELECT * FROM factions WHERE slug = ?", (faction_slug,)).fetchone()
-
-            if not username or not password or not faction:
-                flash("Username, password, and faction are required.")
+            if not allow_auth_attempt("register"):
+                flash("Too many sign-up attempts. Please try again in one hour.")
+                status = 429
+            elif invite_code and not secrets.compare_digest(invite_code.encode(), request.form.get("invite_code", "").encode()):
+                flash("Enter the invite code provided by the game host.")
+                status = 400
+            elif not re.fullmatch(r"[A-Za-z0-9_-]{3,24}", username):
+                flash("Username must be 3–24 letters, numbers, underscores or hyphens.")
+                status = 400
+            elif not valid_signup_password(password):
+                flash("Use a password or passphrase of 10–128 characters.")
+                status = 400
+            elif password != confirmation:
+                flash("Passwords do not match. Enter them again.")
+                status = 400
+            elif not faction:
+                flash("Choose Atreides, Harkonnen or Fremen.")
+                status = 400
             else:
-                try:
-                    cursor = db.execute(
-                        """
-                        INSERT INTO users (username, password_hash, faction_id, created_at)
-                        VALUES (?, ?, ?, ?)
-                        """,
-                        (username, generate_password_hash(password), faction["id"], utc_now().isoformat()),
-                    )
-                    create_starting_village(db, cursor.lastrowid)
-                    db.commit()
-                    flash("Account created. Log in to enter your base.")
-                    return redirect(url_for("login"))
-                except sqlite3.IntegrityError:
-                    flash("That username is already taken.")
-
-    return render_template("register.html", factions=factions)
+                db.execute("BEGIN IMMEDIATE")
+                if db.execute("SELECT id FROM users WHERE username = ? COLLATE NOCASE", (username,)).fetchone():
+                    flash("That username is already taken. Choose another.")
+                    status = 409
+                else:
+                    try:
+                        cursor = db.execute("INSERT INTO users (username, password_hash, faction_id, created_at) VALUES (?, ?, ?, ?)",
+                                            (username, generate_password_hash(password), faction["id"], utc_now().isoformat()))
+                        create_starting_village(db, cursor.lastrowid)
+                        village = get_village(db, cursor.lastrowid)
+                        ensure_village_map_position(db, village)
+                        db.commit()
+                        flash("Your house is founded! Log in to begin the tutorial.")
+                        return redirect(url_for("login"))
+                    except (sqlite3.IntegrityError, RuntimeError):
+                        db.rollback()
+                        flash("Your account could not be created. The world may be full; contact the game host.")
+                        status = 409
+    return render_template("register.html", factions=factions, entered_username=username,
+                           selected_faction=faction_slug, invite_required=bool(invite_code)), status
 
 
 @app.route("/login", methods=("GET", "POST"))
 def login():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    status = 200
     if request.method == "POST":
-        username = request.form["username"].strip()
-        password = request.form["password"]
-        with get_db() as db:
-            user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-        if user and check_password_hash(user["password_hash"], password):
-            session.clear()
-            session["user_id"] = user["id"]
-            return redirect(url_for("dashboard"))
-        flash("Invalid username or password.")
-    return render_template("login.html")
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if not allow_auth_attempt("login", username):
+            flash("Too many login attempts. Please try again in 15 minutes.")
+            status = 429
+        else:
+            with get_db() as db:
+                # Exact matches preserve legacy accounts differing only by case.
+                user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+                if not user:
+                    matches = db.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (username,)).fetchall()
+                    user = matches[0] if len(matches) == 1 else None
+            valid = check_password_hash(user["password_hash"] if user else DUMMY_PASSWORD_HASH, password) if len(password) <= 4096 else False
+            if user and valid:
+                session.clear()
+                session["user_id"] = user["id"]
+                return redirect(url_for("dashboard"))
+            flash("Invalid username or password.")
+            status = 400
+    return render_template("login.html"), status
 
 
 @app.route("/logout")
@@ -4823,7 +4907,7 @@ def dev_reset_password():
     admin_token = os.environ.get("DEV_ADMIN_TOKEN", "")
     if not DEV_TOOLS_ENABLED or not admin_token or request.remote_addr not in ("127.0.0.1", "::1"):
         abort(404)
-    if request.method == "POST" and not secrets.compare_digest(request.form.get("admin_token", ""), admin_token):
+    if request.method == "POST" and not secrets.compare_digest(request.form.get("admin_token", "").encode(), admin_token.encode()):
         abort(403)
     if request.method == "POST":
         username = request.form.get("username", "").strip()
