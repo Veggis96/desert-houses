@@ -54,6 +54,9 @@ if (-not (Test-Path -LiteralPath $VenvPython)) {
 
 & $VenvPython -m pip install -r requirements.txt
 
+& $VenvPython -c "import app; app.init_db()"
+if ($LASTEXITCODE -ne 0) { throw "Game database initialization failed." }
+
 $BindAddress = Get-BindAddress -RequestedAddress $HostAddress
 $env:FLASK_APP = "app"
 

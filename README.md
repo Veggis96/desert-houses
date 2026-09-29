@@ -17,7 +17,7 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Produce only Spice Sand from Spice Fields; sustained Melange refining requires additional Sand from raids against map blooms
 - Upgrade the Spice Refinery for greater hourly throughput and research Melange Processing for +8% throughput and 0.1 less Spice Sand per Melange per level
 - Spend Melange on advanced troops, shield and influence research, and high-level infrastructure upgrades
-- Barracks requires Command Center level 3
+- Barracks requires Command Center level 2
 - Train faction-named starter units with health, damage, armor, shield, speed, carry, and Water upkeep stats
 - Train units through a separate sequential unit queue
 - Research construction speed, unit training speed, health, damage, armor, shields, and Bene Gesserit influence
@@ -27,6 +27,8 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Build Scout and Assault Ornithopters, Carryalls, and Spice Harvesters in the Flight Works
 - Render human troops in the Deathstill to recover Water; higher building levels improve recovery efficiency
 - Raid Small and Medium Spice Blooms with regular forces
+- Recall selected troops or the full garrison from owned blooms with timed travel home and an undefended-bloom confirmation
+- View troops at home, travelling or harvesting, and stationed in the Command Center
 - Capture NPC- or player-defended Large Spice Blooms; surviving attackers become a persistent garrison that can receive reinforcements
 - Harvest captured Large Spice Blooms with Spice Harvesters transported by Carryalls
 - Carryalls accelerate fully transported ground forces over long distances
@@ -62,6 +64,39 @@ The SQLite database is created automatically as `game.db` on first run.
 
 - Higher-tier shielded units and combat resolution
 - Spy missions, Reverend Mother loyalty reduction, and village capture
-- Recall and rebalance remote bloom garrisons
 - Officer promotion/demotion and alliance management tools
 - Role management for promoting officers and removing inactive members
+
+## Tests
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Tests use an isolated temporary database.
+
+## Early-game balance
+
+Iron and Wood production starts at 60/hour, and Dew Field production at 12/hour before upkeep and faction bonuses. Windtraps unlock at Dew Field level 5; Barracks at Command Center level 2; Research Centers at Spice Field level 3. Starter pistol troops no longer require Melange. Advanced vehicles and refining retain their existing unlocks and costs.
+
+See [the balance notes](docs/EARLY_GAME_BALANCE.md) for targets and verification. Run the repeatable economy projection with:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/simulate_early_game.py
+```
+
+## Mission planning and factions
+
+Map mission forms preview the selected force's attack, durability, carrying capacity, transport-aware travel time, arrival and estimated return. Capture and reinforcement survivors stay stationed. Defense estimates use saved scouting only; unknown or old intelligence is marked uncertain. The preview never dispatches troops.
+
+- Atreides infantry: +15% health, +20% armor.
+- Harkonnen infantry: +15% damage, +10% Water upkeep.
+- Fremen infantry: +20% ground speed, -20% Water upkeep.
+
+Existing production bonuses remain. Aircraft and harvesters do not gain infantry bonuses. Faction stats appear on training screens and apply to combat, movement and upkeep, including existing armies.
+
+Alliance leaders and officers can set a target of 1–20 controlled Large Spice Blooms on the alliance page. Progress counts territory held by current members and falls when control or membership changes. This is a shared territorial goal, with no automatic resource reward.
+
+## Development and production configuration
+
+Development tools and debug mode are disabled by default. Session signing uses `SECRET_KEY`, or a random per-process key for local development. Set a persistent secret for stable sessions across restarts/workers. See [configuration details](docs/CONFIGURATION.md).

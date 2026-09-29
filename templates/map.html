@@ -163,7 +163,7 @@
         </div>
 
         {% if can_capture %}
-            <form method="post" action="{{ url_for('capture_spice_bloom', tile_id=selected_tile.id) }}" class="wide-form operation-form capture-form">
+            <form method="post" action="{{ url_for('capture_spice_bloom', tile_id=selected_tile.id) }}" data-plan-mission="capture" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form operation-form capture-form">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Capture Large Bloom</p>
                 <p class="muted compact-copy">Defeat its current defenders. Surviving units remain here as your garrison.</p>
@@ -177,8 +177,9 @@
             <p class="muted">Train combat troops or Assault Ornithopters to capture this bloom.</p>
         {% endif %}
 
+        {% if controls_selected_bloom %}<p><a class="button-link secondary" href="{{ url_for('command_center_page') }}">Manage garrison / Recall troops</a></p>{% endif %}
         {% if can_reinforce %}
-            <form method="post" action="{{ url_for('reinforce_spice_bloom', tile_id=selected_tile.id) }}" class="wide-form operation-form">
+            <form method="post" action="{{ url_for('reinforce_spice_bloom', tile_id=selected_tile.id) }}" data-plan-mission="reinforce" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form operation-form">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Reinforce Garrison</p>
                 {% for unit in unit_cards %}
@@ -190,7 +191,7 @@
         {% endif %}
 
         {% if can_harvest %}
-            <form method="post" action="{{ url_for('harvest_spice_bloom', tile_id=selected_tile.id) }}" class="wide-form operation-form harvest-form">
+            <form method="post" action="{{ url_for('harvest_spice_bloom', tile_id=selected_tile.id) }}" data-plan-mission="harvest" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form operation-form harvest-form">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Harvest Spice Sand</p>
                 <p class="muted compact-copy">Choose the extraction policy before departure. The Carryall evacuates automatically; no live monitoring is required.</p>
@@ -217,20 +218,13 @@
         {% endif %}
 
         {% if can_send %}
-            <form method="post" action="{{ url_for('send_map_raid', tile_id=selected_tile.id) }}" class="wide-form raid-form" data-defender-defense="{{ defender_summary.defense if has_tile_intel else 0 }}" data-defender-attack="{{ defender_summary.attack if has_tile_intel else 0 }}" data-visible-loot="{{ visible_loot|round|int }}" data-distance="{{ distance }}">
+            <form method="post" action="{{ url_for('send_map_raid', tile_id=selected_tile.id) }}" data-plan-mission="raid" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form raid-form" data-defender-defense="{{ defender_summary.defense if has_tile_intel else 0 }}" data-defender-attack="{{ defender_summary.attack if has_tile_intel else 0 }}" data-visible-loot="{{ visible_loot|round|int }}" data-distance="{{ distance }}">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Send Raid</p>
                 {% for unit in unit_cards %}
                     <label for="unit-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | dmg {{ unit.damage }} | durability {{ unit.durability }} | carry {{ unit.carry }}</label>
                     <input id="unit-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" value="0" min="0" max="{{ unit.amount }}" data-raid-unit data-damage="{{ unit.damage }}" data-durability="{{ unit.durability }}" data-carry="{{ unit.carry }}" data-speed="{{ unit.speed }}">
                 {% endfor %}
-                <div class="raid-estimate" aria-live="polite">
-                    <span>Selected attack 0</span>
-                    <span>Selected durability 0</span>
-                    <span>Selected carry 0</span>
-                    {% if has_tile_intel %}<span>Visible loot {{ visible_loot|round|int }}</span>{% endif %}
-                    {% if has_tile_intel %}<span>Recommended attack {{ defender_summary.defense }}</span>{% else %}<span>Scout first for defense estimate</span>{% endif %}
-                </div>
                 <div class="raid-presets" aria-label="Raid presets">
                     <button class="secondary compact" type="button" data-raid-preset="clear">Clear</button>
                     {% if has_tile_intel %}
@@ -247,7 +241,7 @@
         {% endif %}
 
         {% if can_scout %}
-            <form method="post" action="{{ url_for('send_map_scout', tile_id=selected_tile.id) }}" class="wide-form raid-form">
+            <form method="post" action="{{ url_for('send_map_scout', tile_id=selected_tile.id) }}" data-plan-mission="scout" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form raid-form">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Send Scouts</p>
                 {% for unit in scout_cards %}
@@ -351,46 +345,18 @@
         const form = document.querySelector(".raid-form[data-defender-defense]");
         if (!form) return;
         const inputs = Array.from(form.querySelectorAll("[data-raid-unit]"));
-        const estimate = form.querySelector(".raid-estimate");
         const presetButtons = Array.from(form.querySelectorAll("[data-raid-preset]"));
-        if (!inputs.length || !estimate) return;
+        if (!inputs.length) return;
         const defenderDefense = Number(form.dataset.defenderDefense || 0);
         const defenderAttack = Number(form.dataset.defenderAttack || 0);
         const visibleLoot = Number(form.dataset.visibleLoot || 0);
         const targetDistance = Number(form.dataset.distance || 0);
 
         function updateEstimate() {
-            let attack = 0;
-            let durability = 0;
-            let carry = 0;
-            let slowestSpeed = Infinity;
-            let selectedUnits = 0;
-            inputs.forEach((input) => {
-                const amount = Math.max(Number(input.value || 0), 0);
-                selectedUnits += amount;
-                attack += amount * Number(input.dataset.damage || 0);
-                durability += amount * Number(input.dataset.durability || 0);
-                carry += amount * Number(input.dataset.carry || 0);
-                if (amount > 0) slowestSpeed = Math.min(slowestSpeed, Number(input.dataset.speed || 0));
-            });
-            let status = "Scout first for defense estimate";
-            if (defenderDefense > 0) {
-                if (attack < defenderDefense) {
-                    status = "Likely defeat";
-                } else {
-                    const lossPressure = defenderAttack / Math.max(attack + durability, 1);
-                    status = lossPressure > 0.45 ? "Likely costly victory" : "Likely victory";
-                }
-            }
-            const travelSeconds = selectedUnits && slowestSpeed > 0 ? Math.max(Math.floor(targetDistance / slowestSpeed * 60), 8) : 0;
-            const lootStatus = visibleLoot > 0 ? `<span>Visible loot ${visibleLoot}</span><span>Carry covers ${Math.min(carry, visibleLoot)} / ${visibleLoot}</span>` : "";
-            const recommended = defenderDefense > 0 ? `<span>Recommended attack ${Math.ceil(defenderDefense * 1.25)}</span>` : "";
-            const travel = travelSeconds ? `<span>Travel ${travelSeconds}s each way</span>` : "";
-            const tone = status === "Likely victory" ? "good" : status === "Likely defeat" ? "danger" : "caution";
-            estimate.innerHTML = `<span>Selected attack ${attack}</span><span>Selected durability ${durability}</span><span>Selected carry ${carry}</span>${travel}${lootStatus}${recommended}<span class="estimate-outcome ${tone}">${status}</span>`;
+            form.dispatchEvent(new Event("input", {bubbles: true}));
         }
 
-        inputs.forEach((input) => input.addEventListener("input", updateEstimate));
+
         function clearInputs() {
             inputs.forEach((input) => { input.value = 0; });
         }
@@ -630,5 +596,6 @@
         if (new URLSearchParams(location.search).get('focus') === 'selected') requestAnimationFrame(locateSelected);
     })();
 </script>
+<script src="{{ url_for('static', filename='mission-planner.js') }}" defer></script>
 {% endblock %}
 

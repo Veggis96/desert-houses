@@ -23,6 +23,22 @@
     <a href="#management">Management</a>
 </section>
 
+<section class="panel spaced-panel">
+    <h2>Spice Territory Objective</h2>
+    <p><strong>{{ alliance_blooms|length }} / {{ target_blooms }} Large Spice Blooms controlled</strong> — {{ 'Goal reached' if alliance_blooms|length >= target_blooms else 'Capture more territory' }}</p>
+    <p class="muted">Shared territory held by current members. Progress drops when a bloom is lost or its owner leaves.</p>
+    {% if membership.role in ['leader', 'officer'] %}
+    <form method="post" action="{{ url_for('set_spice_objective') }}" class="wide-form">
+        <label for="target_blooms">Target blooms (1–20)</label>
+        <input id="target_blooms" name="target_blooms" type="number" min="1" max="20" value="{{ target_blooms }}" required>
+        <button type="submit">Set objective</button>
+    </form>
+    {% endif %}
+    <ul>{% for bloom in alliance_blooms %}
+        <li><a href="{{ url_for('map_page', tile_id=bloom.id) }}">Bloom ({{ bloom.x }}, {{ bloom.y }})</a> — {{ bloom.username }}</li>
+    {% else %}<li>No controlled large blooms yet.</li>{% endfor %}</ul>
+</section>
+
 <section id="overview" class="panel spaced-panel">
     <div class="section-heading">
         <div>

@@ -19,7 +19,7 @@
     <article class="resource-card">
         <span>Active Missions</span>
         <strong>{{ movements|length }}</strong>
-        <small>Outbound and returning</small>
+        <small>Outbound, harvesting and returning</small>
     </article>
     <article class="resource-card">
         <span>Recent Reports</span>
@@ -36,6 +36,47 @@
         <strong>{{ buildings.command_center }}</strong>
         <small>Infrastructure rating</small>
     </article>
+</section>
+
+<section class="panel spaced-panel compact-panel">
+    <h2>Troop Overview</h2>
+    <p class="muted">Available troops, active mission forces, and bloom garrisons. Units in training are excluded.</p>
+    <div style="overflow-x: auto">
+    <table>
+        <thead><tr><th>Unit</th><th>At home</th><th>Travelling / harvesting</th><th>Stationed</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for troop in troop_overview %}
+            <tr><td>{{ troop.name }}</td><td>{{ troop.home }}</td><td>{{ troop.travelling }}</td><td>{{ troop.stationed }}</td><td>{{ troop.total }}</td></tr>
+        {% else %}
+            <tr><td colspan="5">No troops yet. Train units in the Barracks or Flight Works.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<section class="panel spaced-panel compact-panel">
+    <h2>Bloom Garrisons</h2>
+    <p class="muted">Recalled troops travel home before becoming available. Empty blooms remain under your control but are vulnerable to capture.</p>
+    <div class="list-grid">
+    {% for garrison in garrisons %}
+        <article class="building-card">
+            <h3><a href="{{ url_for('map_page', tile_id=garrison.tile.id) }}">Large Spice Bloom ({{ garrison.tile.x }}, {{ garrison.tile.y }})</a></h3>
+            {% if not garrison.defended %}<p class="muted">Undefended: no combat troops stationed here.</p>{% endif %}
+            {% if garrison.units %}
+            <form method="post" action="{{ url_for('recall_spice_bloom', tile_id=garrison.tile.id) }}" class="wide-form">
+                {% for unit in garrison.units %}
+                <label for="recall-{{ garrison.tile.id }}-{{ unit.key }}">{{ unit.name }}: {{ unit.amount }} stationed</label>
+                <input id="recall-{{ garrison.tile.id }}-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" min="0" max="{{ unit.amount }}" value="0" step="1">
+                {% endfor %}
+                <label><input type="checkbox" name="confirm_undefended" value="1"> I understand that removing all combat troops leaves this bloom undefended.</label>
+                <button type="submit">Recall selected</button>
+                <button type="submit" name="recall_all" value="1" class="secondary">Recall all</button>
+            </form>
+            {% else %}<p class="muted">No stationed troops.</p>{% endif %}
+        </article>
+    {% else %}<p class="muted">No controlled blooms. Capture a Large Spice Bloom from the map.</p>{% endfor %}
+    </div>
 </section>
 
 <section class="panel spaced-panel target-board-panel">
@@ -82,8 +123,9 @@
         {% for movement in movements %}
             <article class="building-card movement-item" {% if movement.status == 'outbound' %}data-finish-at="{{ movement.arrive_at }}"{% elif movement.return_at %}data-finish-at="{{ movement.return_at }}"{% endif %}>
                 <div>
-                    <h3>{{ movement.mission_type|capitalize }} {{ movement.status }} to {{ tile_display_name(movement.tile_type) }} ({{ movement.target_x }}, {{ movement.target_y }})</h3>
+                    <h3>{{ movement.mission_type|capitalize }} {{ movement.status }} {{ 'from' if movement.status == 'returning' else 'at' if movement.status == 'harvesting' else 'to' }} {{ tile_display_name(movement.tile_type) }} ({{ movement.target_x }}, {{ movement.target_y }})</h3>
                     <p class="muted movement-timer">{{ queue_status({'started_at': movement.started_at, 'finish_at': movement.arrive_at if movement.status == 'outbound' else movement.return_at}) }}</p>
+                    {% for unit in movement_units[movement.id] %}<span>{{ unit.name }}: {{ unit.amount }}{% if not loop.last %} · {% endif %}</span>{% endfor %}
                     {% if movement.report %}<p class="muted compact-copy">{{ movement.report }}</p>{% endif %}
                 </div>
                 <div class="progress-track" aria-label="Mission progress">

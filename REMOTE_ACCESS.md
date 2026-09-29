@@ -77,3 +77,7 @@ Local-only fallback:
 ```powershell
 .\scripts\start-remote-work.ps1 -HostAddress 127.0.0.1
 ```
+
+## Game configuration
+
+Development tools and Flask debug mode are off by default. The game launcher initializes/migrates the database before starting. See [configuration details](docs/CONFIGURATION.md) for persistent session secrets and local-only password recovery.

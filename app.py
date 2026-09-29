@@ -3,10 +3,11 @@ import math
 import os
 import random
 import sqlite3
+import secrets
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import abort, jsonify, Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -14,7 +15,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "game.db")
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+if os.environ.get("GAME_ENV") == "production" and not os.environ.get("SECRET_KEY"):
+    raise RuntimeError("Set SECRET_KEY before starting in production.")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
+                  SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
 
 
 @app.context_processor
@@ -43,28 +48,28 @@ def inject_global_counts():
 
 
 FACTIONS = [
-    ("atreides", "Atreides", "Disciplined and balanced. +5% wood production."),
-    ("harkonnen", "Harkonnen", "Industrial and brutal. +5% iron production."),
-    ("fremen", "Fremen", "Desert survivors. +10% water production."),
+    ("atreides", "Atreides", "+5% wood; infantry +15% health and +20% armor."),
+    ("harkonnen", "Harkonnen", "+5% iron; infantry +15% damage, +10% water upkeep."),
+    ("fremen", "Fremen", "+10% water; infantry +20% speed, -20% water upkeep."),
 ]
 
 BUILDINGS = {
     "iron_mine": {
         "name": "Iron Mine",
         "resource": "iron",
-        "base_production": 20,
+        "base_production": 60,
         "cost": {"iron": 45, "wood": 35, "water": 10, "spice": 0},
     },
     "wood_yard": {
         "name": "Wood Yard",
         "resource": "wood",
-        "base_production": 20,
+        "base_production": 60,
         "cost": {"iron": 35, "wood": 45, "water": 10, "spice": 0},
     },
     "dew_field": {
         "name": "Dew Field",
         "resource": "water",
-        "base_production": 8,
+        "base_production": 12,
         "cost": {"iron": 30, "wood": 30, "water": 5, "spice": 0},
     },
     "spice_field": {
@@ -103,7 +108,7 @@ BUILDINGS = {
         "resource": "water",
         "base_production": 24,
         "cost": {"iron": 220, "wood": 260, "water": 80, "spice": 0},
-        "requires": {"dew_field": 10},
+        "requires": {"dew_field": 5},
     },
     "large_windtrap": {
         "name": "Large Windtrap",
@@ -124,14 +129,14 @@ BUILDINGS = {
         "name": "Barracks",
         "resource": None,
         "base_production": 0,
-        "cost": {"iron": 180, "wood": 160, "water": 70, "spice": 0},
-        "requires": {"command_center": 3},
+        "cost": {"iron": 120, "wood": 100, "water": 50, "spice": 0},
+        "requires": {"command_center": 2},
     },
     "command_center": {
         "name": "Command Center",
         "resource": None,
         "base_production": 0,
-        "cost": {"iron": 260, "wood": 240, "water": 100, "spice": 5},
+        "cost": {"iron": 180, "wood": 160, "water": 70, "spice": 3},
         "melange_from_level": 6,
         "melange_base_cost": 3,
     },
@@ -139,8 +144,8 @@ BUILDINGS = {
         "name": "Research Center",
         "resource": None,
         "base_production": 0,
-        "cost": {"iron": 320, "wood": 280, "water": 120, "spice": 20},
-        "requires": {"spice_field": 5},
+        "cost": {"iron": 200, "wood": 180, "water": 80, "spice": 10},
+        "requires": {"spice_field": 3},
         "melange_from_level": 5,
         "melange_base_cost": 4,
     },
@@ -185,7 +190,7 @@ EMBASSY_ALLIANCE_LEVEL = 10
 CONSTRUCTION_QUEUE_LIMIT = 2
 UNIT_QUEUE_LIMIT = 3
 RESEARCH_QUEUE_LIMIT = 1
-DEV_TOOLS_ENABLED = os.environ.get("DEV_TOOLS_ENABLED", "1") == "1"
+DEV_TOOLS_ENABLED = os.environ.get("DEV_TOOLS_ENABLED", "0") == "1"
 DEV_RESOURCE_AMOUNT = 9_999_999
 MAP_RADIUS = 15
 MAP_SIZE = MAP_RADIUS * 2 + 1
@@ -340,7 +345,7 @@ UNIT_TYPES = {
         "carry": 25,
         "water_upkeep": 0.35,
         "training_time": 18,
-        "cost": {"iron": 55, "wood": 35, "water": 12, "spice": 0, "melange": 1},
+        "cost": {"iron": 55, "wood": 35, "water": 12, "spice": 0},
     },
     "influence_spy": {
         "category": "influence",
@@ -411,6 +416,30 @@ UNIT_TYPES = {
     },
 }
 
+FACTION_ABILITIES = {
+    "atreides": {"description": "Infantry: +15% health and +20% armor.", "health": 1.15, "armor": 1.2},
+    "harkonnen": {"description": "Infantry: +15% damage, +10% water upkeep.", "damage": 1.15, "water_upkeep": 1.1},
+    "fremen": {"description": "Infantry: +20% speed, -20% water upkeep.", "speed": 1.2, "water_upkeep": 0.8},
+}
+
+
+class ResearchLevels(dict):
+    """Research levels with the village faction used by combat calculations."""
+    def __init__(self, levels, faction_slug=None):
+        super().__init__(levels)
+        self.faction_slug = faction_slug
+
+
+def village_faction(db, village):
+    row = db.execute("SELECT factions.slug FROM users JOIN factions ON factions.id = users.faction_id WHERE users.id = ?", (village["user_id"],)).fetchone()
+    return row["slug"] if row else None
+
+
+def faction_unit_stat(unit_key, stat, faction_slug=None):
+    multiplier = FACTION_ABILITIES.get(faction_slug, {}).get(stat, 1) if UNIT_TYPES[unit_key]["category"] == "military" else 1
+    return round(UNIT_TYPES[unit_key][stat] * multiplier, 3)
+
+
 NPC_UNIT_TYPES = {
     "raider": {"name": "Raiders", "singular": "Raider", "attack": 12, "defense": 18, "health": 35},
     "smuggler": {"name": "Smugglers", "singular": "Smuggler", "attack": 18, "defense": 12, "health": 25},
@@ -461,9 +490,9 @@ TUTORIAL_STEPS = [
     },
     {
         "title": "Prepare The Windtrap",
-        "text": "Raise the Dew Field to level 10. This unlocks the Windtrap.",
+        "text": "Raise the Dew Field to level 5. This unlocks the Windtrap.",
         "building": "dew_field",
-        "level": 10,
+        "level": 5,
         "reward": {"iron": 260, "wood": 300, "water": 120, "spice": 5},
     },
     {
@@ -489,9 +518,9 @@ TUTORIAL_STEPS = [
     },
     {
         "title": "Strengthen Command",
-        "text": "Upgrade the Command Center to level 3. A barracks needs order before soldiers.",
+        "text": "Upgrade the Command Center to level 2. A barracks needs order before soldiers.",
         "building": "command_center",
-        "level": 3,
+        "level": 2,
         "reward": {"iron": 260, "wood": 230, "water": 100, "spice": 8},
     },
     {
@@ -937,6 +966,9 @@ def init_db():
             """
         )
 
+        db.execute("""CREATE TABLE IF NOT EXISTS alliance_spice_objectives (
+            alliance_id INTEGER PRIMARY KEY, target_blooms INTEGER NOT NULL DEFAULT 3,
+            FOREIGN KEY (alliance_id) REFERENCES alliances(id))""")
         add_column_if_missing(db, "villages", "point_wood_spent REAL NOT NULL DEFAULT 0")
         add_column_if_missing(db, "villages", "point_water_spent REAL NOT NULL DEFAULT 0")
         add_column_if_missing(db, "villages", "points INTEGER NOT NULL DEFAULT 0")
@@ -960,7 +992,7 @@ def init_db():
 
         for slug, name, description in FACTIONS:
             db.execute(
-                "INSERT OR IGNORE INTO factions (slug, name, description) VALUES (?, ?, ?)",
+                "INSERT INTO factions (slug, name, description) VALUES (?, ?, ?) ON CONFLICT(slug) DO UPDATE SET description = excluded.description",
                 (slug, name, description),
             )
         migrate_spice_blooms(db)
@@ -1043,12 +1075,13 @@ def get_research_levels(db, village_id):
         "SELECT research_key, level FROM village_research WHERE village_id = ?",
         (village_id,),
     ).fetchall()
-    return {row["research_key"]: row["level"] for row in rows}
+    village = db.execute("SELECT * FROM villages WHERE id = ?", (village_id,)).fetchone()
+    return ResearchLevels({row["research_key"]: row["level"] for row in rows}, village_faction(db, village) if village else None)
 
 
 def construction_duration_seconds(current_level, research_levels=None):
     duration = min(30 + (current_level * 10), 120)
-    speed_level = (research_levels or {}).get("construction_speed", 0)
+    speed_level = (research_levels if research_levels is not None else {}).get("construction_speed", 0)
     return max(int(duration * (1 - min(speed_level * 0.05, 0.5))), 5)
 
 
@@ -1802,7 +1835,7 @@ def map_distance(source_x, source_y, target_x, target_y):
     return math.hypot(target_x - source_x, target_y - source_y)
 
 
-def movement_duration_seconds(source_x, source_y, target_x, target_y, sent_units):
+def movement_duration_seconds(source_x, source_y, target_x, target_y, sent_units, faction_slug=None):
     sent_units = normalize_player_units(sent_units)
     carryalls = sent_units.get("carryall", 0)
     transported = sum(
@@ -1812,12 +1845,12 @@ def movement_duration_seconds(source_x, source_y, target_x, target_y, sent_units
     if carryalls and transported <= carryalls * UNIT_TYPES["carryall"]["transport_capacity"]:
         speeds = [UNIT_TYPES["carryall"]["speed"]]
         speeds.extend(
-            UNIT_TYPES[key]["speed"] for key, amount in sent_units.items()
+            faction_unit_stat(key, "speed", faction_slug) for key, amount in sent_units.items()
             if amount > 0 and key != "carryall" and (UNIT_TYPES[key].get("can_scout") or UNIT_TYPES[key].get("can_raid"))
         )
         slowest_speed = min(speeds)
     else:
-        slowest_speed = min(UNIT_TYPES[key]["speed"] for key, amount in sent_units.items() if amount > 0)
+        slowest_speed = min(faction_unit_stat(key, "speed", faction_slug) for key, amount in sent_units.items() if amount > 0)
     distance = max(map_distance(source_x, source_y, target_x, target_y), 1)
     return max(int(distance / slowest_speed * 60), 8)
 
@@ -1839,14 +1872,14 @@ def sent_unit_stats(sent_units, research_levels):
 
 def player_unit_summary(units, research_levels=None):
     units = normalize_player_units(units)
-    attack, durability, carry = sent_unit_stats(units, research_levels or {})
+    attack, durability, carry = sent_unit_stats(units, research_levels if research_levels is not None else {})
     defense = 0
     health = 0
     for key, amount in units.items():
-        damage = effective_unit_stat(key, "damage", research_levels or {})
-        armor = effective_unit_stat(key, "armor", research_levels or {})
-        shield = effective_unit_stat(key, "shield", research_levels or {})
-        unit_health = effective_unit_stat(key, "health", research_levels or {})
+        damage = effective_unit_stat(key, "damage", research_levels if research_levels is not None else {})
+        armor = effective_unit_stat(key, "armor", research_levels if research_levels is not None else {})
+        shield = effective_unit_stat(key, "shield", research_levels if research_levels is not None else {})
+        unit_health = effective_unit_stat(key, "health", research_levels if research_levels is not None else {})
         defense += (damage * 0.7 + armor * 5 + shield * 3) * amount
         health += unit_health * amount
     return {"count": sum(units.values()), "attack": round(attack, 1), "defense": round(defense, 1), "health": round(health, 1), "durability": round(durability, 1), "carry": carry}
@@ -1859,9 +1892,9 @@ def player_unit_report_rows(units, faction_slug, research_levels=None):
             "key": key,
             "name": unit_display_name(key, faction_slug),
             "amount": amount,
-            "attack": effective_unit_stat(key, "damage", research_levels or {}),
-            "defense": round(effective_unit_stat(key, "damage", research_levels or {}) * 0.7 + effective_unit_stat(key, "armor", research_levels or {}) * 5 + effective_unit_stat(key, "shield", research_levels or {}) * 3, 1),
-            "health": effective_unit_stat(key, "health", research_levels or {}),
+            "attack": effective_unit_stat(key, "damage", research_levels if research_levels is not None else {}),
+            "defense": round(effective_unit_stat(key, "damage", research_levels if research_levels is not None else {}) * 0.7 + effective_unit_stat(key, "armor", research_levels if research_levels is not None else {}) * 5 + effective_unit_stat(key, "shield", research_levels if research_levels is not None else {}) * 3, 1),
+            "health": effective_unit_stat(key, "health", research_levels if research_levels is not None else {}),
         })
     return rows
 
@@ -1973,7 +2006,7 @@ def process_troop_movements(db, village_id):
             if tile:
                 save_tile_intel(db, village["user_id"], tile)
             create_battle_report(db, village, movement, tile, "Scouted", sent_units, survivors, enemy_units, enemy_units, loot, "scout")
-            return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units))
+            return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
             db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, report = ? WHERE id = ?", (player_units_json(survivors), return_at.isoformat(), "Scouting complete. Aircraft and agents are returning with intelligence.", movement["id"]))
             continue
         if mission == "reinforce":
@@ -1982,7 +2015,7 @@ def process_troop_movements(db, village_id):
                 db.execute("UPDATE map_tiles SET garrison_json = ? WHERE id = ?", (player_units_json(garrison), tile["id"]))
                 db.execute("UPDATE troop_movements SET status = 'complete', survivors_json = ?, report = ? WHERE id = ?", (player_units_json(sent_units), "Reinforcements joined the bloom garrison.", movement["id"]))
             else:
-                return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units))
+                return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
                 db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, report = ? WHERE id = ?", (player_units_json(sent_units), return_at.isoformat(), "Control changed before arrival. Reinforcements are returning.", movement["id"]))
             continue
         if mission == "harvest":
@@ -2000,13 +2033,13 @@ def process_troop_movements(db, village_id):
                     (finish_at.isoformat(), f"{policy['name']} in progress. Carryall extraction is automatic.", movement["id"]),
                 )
             else:
-                return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units))
+                return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
                 report = "Harvest aborted because the bloom is unavailable or no longer under your control."
                 db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, report = ? WHERE id = ?", (player_units_json(sent_units), return_at.isoformat(), report, movement["id"]))
             continue
         if mission == "capture":
             if not tile or tile["tile_type"] != "spice_bloom_large" or tile["controller_village_id"] == village_id:
-                return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units))
+                return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
                 db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, report = ? WHERE id = ?", (player_units_json(sent_units), return_at.isoformat(), "Capture no longer required. Force is returning.", movement["id"]))
                 continue
             enemy_before_units = npc_units_for_tile(tile)
@@ -2049,7 +2082,7 @@ def process_troop_movements(db, village_id):
             enemy_after_units = enemy_before_units
             outcome, report = "Defeat", "Raid failed. No units survived."
         create_battle_report(db, village, movement, tile, outcome, sent_units, survivors, enemy_before_units, enemy_after_units, loot)
-        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units))
+        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
         db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, loot_iron = ?, loot_wood = ?, loot_water = ?, loot_spice = ?, report = ? WHERE id = ?", (player_units_json(survivors), return_at.isoformat(), loot["iron"], loot["wood"], loot["water"], loot["spice"], report, movement["id"]))
     harvesting = db.execute("SELECT * FROM troop_movements WHERE village_id = ? AND status = 'harvesting' ORDER BY return_at ASC", (village_id,)).fetchall()
     for movement in harvesting:
@@ -2096,7 +2129,7 @@ def process_troop_movements(db, village_id):
             )
         else:
             report = "Harvest interrupted because control of the bloom changed. The flight group is returning."
-        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units))
+        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
         db.execute(
             "UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, loot_spice = ?, report = ? WHERE id = ?",
             (player_units_json(survivors), return_at.isoformat(), spice, report, movement["id"]),
@@ -2169,7 +2202,7 @@ def unit_training_cost(unit_key, amount):
 
 def unit_training_duration(unit_key, amount, research_levels=None):
     duration = UNIT_TYPES[unit_key]["training_time"] * amount
-    speed_level = (research_levels or {}).get("unit_training_speed", 0)
+    speed_level = (research_levels if research_levels is not None else {}).get("unit_training_speed", 0)
     return max(int(duration * (1 - min(speed_level * 0.05, 0.5))), 3)
 
 
@@ -2177,7 +2210,7 @@ def is_unit_unlocked(unit_key, buildings, research_levels=None):
     unit = UNIT_TYPES[unit_key]
     building_ok = buildings.get(unit["unlock_building"], 0) >= unit["unlock_level"]
     research_requirements = unit.get("unlock_research", {})
-    research_ok = all((research_levels or {}).get(key, 0) >= level for key, level in research_requirements.items())
+    research_ok = all((research_levels if research_levels is not None else {}).get(key, 0) >= level for key, level in research_requirements.items())
     return building_ok and research_ok
 
 
@@ -2186,7 +2219,7 @@ def unit_research_requirement_text(unit_key):
 
 
 def effective_unit_stat(unit_key, stat, research_levels):
-    base_value = UNIT_TYPES[unit_key][stat]
+    base_value = faction_unit_stat(unit_key, stat, getattr(research_levels, "faction_slug", None))
     key_map = {
         "health": "unit_health",
         "damage": "unit_damage",
@@ -2212,7 +2245,7 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "key": key,
                 "name": unit_display_name(key, faction_slug),
                 "role": config.get("role"),
-                "ability_summary": config.get("ability_summary"),
+                "ability_summary": FACTION_ABILITIES[faction_slug]["description"] if category == "military" else config.get("ability_summary"),
                 "abilities": config.get("abilities", []),
                 "owned": units.get(key, 0),
                 "unlocked": unlocked,
@@ -2223,9 +2256,9 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "damage": effective_unit_stat(key, "damage", research_levels),
                 "armor": effective_unit_stat(key, "armor", research_levels),
                 "shield": effective_unit_stat(key, "shield", research_levels),
-                "speed": config["speed"],
+                "speed": faction_unit_stat(key, "speed", faction_slug),
                 "carry": config["carry"],
-                "water_upkeep": config["water_upkeep"],
+                "water_upkeep": faction_unit_stat(key, "water_upkeep", faction_slug),
                 "training_time": unit_training_duration(key, 1, research_levels),
                 "cost": cost,
                 "missing_resources": missing_resources(village, cost),
@@ -2504,8 +2537,8 @@ def base_nav_items(buildings, faction_slug):
     ]
 
 
-def unit_water_consumption_per_hour(units):
-    return sum(UNIT_TYPES[key]["water_upkeep"] * amount for key, amount in units.items() if key in UNIT_TYPES)
+def unit_water_consumption_per_hour(units, faction_slug=None):
+    return sum(faction_unit_stat(key, "water_upkeep", faction_slug) * amount for key, amount in units.items() if key in UNIT_TYPES)
 
 
 def production_for(building_key, level, faction_slug):
@@ -2525,17 +2558,17 @@ def production_for(building_key, level, faction_slug):
 
 
 def spice_refinery_output_rate(level, faction_slug, research_levels=None):
-    research_level = (research_levels or {}).get("spice_refining", 0)
+    research_level = (research_levels if research_levels is not None else {}).get("spice_refining", 0)
     return production_for("spice_refinery", level, faction_slug) * (1 + research_level * 0.08)
 
 
 def spice_refinery_conversion_ratio(research_levels=None):
-    research_level = (research_levels or {}).get("spice_refining", 0)
+    research_level = (research_levels if research_levels is not None else {}).get("spice_refining", 0)
     return round(max(3.0, BUILDINGS["spice_refinery"]["conversion_ratio"] - research_level * 0.1), 1)
 
 
-def water_consumption_per_hour(buildings, units=None):
-    return 2 + sum(buildings.values()) * 0.5 + unit_water_consumption_per_hour(units or {})
+def water_consumption_per_hour(buildings, units=None, faction_slug=None):
+    return 2 + sum(buildings.values()) * 0.5 + unit_water_consumption_per_hour(units or {}, faction_slug)
 
 
 def storage_capacity(buildings):
@@ -2599,7 +2632,7 @@ def resource_rates(buildings, faction_slug, units=None, research_levels=None):
                 rates[resource] += spice_refinery_output_rate(level, faction_slug, research_levels)
             else:
                 rates[resource] += production_for(building_key, level, faction_slug)
-    rates["water"] -= water_consumption_per_hour(buildings, units)
+    rates["water"] -= water_consumption_per_hour(buildings, units, faction_slug)
     refinery_rate = rates["melange"]
     rates["spice"] -= refinery_rate * spice_refinery_conversion_ratio(research_levels)
     return rates
@@ -2840,7 +2873,7 @@ def dashboard():
         rates=rates,
         capacity=capacity,
         buildings=building_cards,
-        water_consumption=water_consumption_per_hour(buildings, units),
+        water_consumption=water_consumption_per_hour(buildings, units, user["faction_slug"]),
         membership=membership,
         embassy_alliance_level=EMBASSY_ALLIANCE_LEVEL,
         construction_queue=construction_queue,
@@ -2888,7 +2921,7 @@ def resource_fields_page():
         rates=rates,
         capacity=capacity,
         fields=field_cards,
-        water_consumption=water_consumption_per_hour(buildings, units),
+        water_consumption=water_consumption_per_hour(buildings, units, user["faction_slug"]),
         construction_queue=construction_queue,
         construction_queue_limit=CONSTRUCTION_QUEUE_LIMIT,
         queue_status=queue_status,
@@ -3036,7 +3069,7 @@ def map_page(tile_id=None):
                 "key": key,
                 "name": unit_display_name(key, user["faction_slug"]),
                 "amount": amount,
-                "speed": UNIT_TYPES[key]["speed"],
+                "speed": faction_unit_stat(key, "speed", user["faction_slug"]),
                 "carry": UNIT_TYPES[key]["carry"],
                 "damage": effective_unit_stat(key, "damage", research_levels),
                 "durability": effective_unit_stat(key, "health", research_levels)
@@ -3147,6 +3180,74 @@ def map_page(tile_id=None):
     )
 
 
+@app.route("/map/<int:tile_id>/plan")
+@login_required
+def plan_map_mission(tile_id):
+    """Read-only estimates from the player's own force and saved intelligence."""
+    with get_db() as db:
+        user = get_current_user(db)
+        village = get_village(db, user["id"])
+        tile = db.execute("SELECT * FROM map_tiles WHERE id = ?", (tile_id,)).fetchone()
+        if not tile or village["map_x"] is None:
+            abort(404)
+        mission = request.args.get("mission", "raid")
+        if mission not in ("raid", "capture", "reinforce", "scout", "harvest"):
+            abort(400)
+        available = get_village_units(db, village["id"])
+        selected = {}
+        for key, config in UNIT_TYPES.items():
+            try:
+                amount = int(request.args.get(f"unit_{key}", "0"))
+            except ValueError:
+                return jsonify(error="Enter whole numbers for troops."), 400
+            eligible = (key in ("carryall", "spice_harvester") if mission == "harvest" else
+                        config["category"] == "influence" or config.get("can_scout") if mission == "scout" else
+                        config["category"] == "military" or config.get("can_raid") or config.get("is_transport"))
+            if amount < 0 or amount > available.get(key, 0) or (amount and not eligible):
+                return jsonify(error="Selected troops are not available for this mission."), 400
+            if amount:
+                selected[key] = amount
+        if not selected:
+            return jsonify(error="Select troops to preview the mission."), 400
+        if mission == "harvest" and (selected.get("spice_harvester", 0) <= 0 or selected.get("carryall", 0) < selected.get("spice_harvester", 0)):
+            return jsonify(error="Each harvester needs a Carryall."), 400
+        research = get_research_levels(db, village["id"])
+        attack, durability, carry = sent_unit_stats(selected, research)
+        travel = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], selected, user["faction_slug"])
+        owned = tile["controller_village_id"] == village["id"]
+        intel = tile if owned else get_tile_intel(db, user["id"], tile_id)
+        now = utc_now()
+        age = max(int((now - parse_time(intel["scouted_at"])).total_seconds()), 0) if intel and not owned else 0 if owned else None
+        stale = age is not None and age >= 3600
+        defense = None
+        if intel:
+            if intel["controller_village_id"]:
+                defender_research = research if owned else None
+                defense = player_unit_summary(player_units_from_json(intel["garrison_json"]), defender_research)["defense"]
+            else:
+                defense = npc_units_defense(npc_units_for_source(intel))
+        if mission not in ("raid", "capture"):
+            risk = "No combat estimate for this mission"
+        elif defense is None:
+            risk = "Unknown — scout first"
+        elif stale:
+            risk = "Uncertain — scouting is over an hour old"
+        elif intel["controller_village_id"] and not owned:
+            risk = "Uncertain — enemy research and faction bonuses are not included"
+        elif attack < defense:
+            risk = "High — selected attack is below known defense"
+        elif attack < defense * 1.3:
+            risk = "Moderate — little margin above known defense"
+        else:
+            risk = "Lower — margin above known defense; losses remain possible"
+        harvest_duration = HARVEST_POLICIES.get(request.args.get("harvest_policy", "balanced"), HARVEST_POLICIES["balanced"])["duration_seconds"] if mission == "harvest" else 0
+        return jsonify(attack=round(attack, 1), durability=round(durability, 1), carry=carry,
+                       travel_seconds=travel, arrival_at=(now + timedelta(seconds=travel)).isoformat(),
+                       return_at=None if mission in ("capture", "reinforce") else (now + timedelta(seconds=travel * 2 + harvest_duration)).isoformat(),
+                       known_defense=defense, intel_age_seconds=age, stale=stale, risk=risk,
+                       note="Estimate assumes immediate dispatch. Surviving capture/reinforcement troops stay at the bloom." if mission in ("capture", "reinforce") else "Return estimate assumes survivors, immediate arrival processing, and unchanged travel speed.")
+
+
 @app.route("/map/<int:tile_id>/bookmark", methods=("POST",))
 @login_required
 def bookmark_tile(tile_id):
@@ -3225,7 +3326,7 @@ def send_map_raid(tile_id):
             return redirect(next_url)
         for key, amount in sent_units.items():
             remove_village_units(db, village["id"], key, amount)
-        duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units)
+        duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units, village_faction(db, village))
         now = utc_now()
         db.execute(
             """
@@ -3280,7 +3381,7 @@ def send_map_scout(tile_id):
             return redirect(next_url)
         for key, amount in sent_units.items():
             remove_village_units(db, village["id"], key, amount)
-        duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units)
+        duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units, village_faction(db, village))
         now = utc_now()
         db.execute(
             """
@@ -3313,7 +3414,7 @@ def collect_operation_units(available_units, predicate):
 def dispatch_operation(db, village, tile, mission_type, sent_units, metadata=None):
     for key, amount in sent_units.items():
         remove_village_units(db, village["id"], key, amount)
-    duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units)
+    duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units, village_faction(db, village))
     now = utc_now()
     db.execute(
         """
@@ -3382,6 +3483,59 @@ def reinforce_spice_bloom(tile_id):
         db.commit()
     flash("Reinforcements dispatched.")
     return redirect(next_url)
+
+
+@app.route("/map/<int:tile_id>/recall", methods=("POST",))
+@login_required
+def recall_spice_bloom(tile_id):
+    with get_db() as db:
+        village, _tile = prepare_map_operation(db, tile_id)
+        # Lock before reading ownership and quantities so concurrent recalls cannot duplicate units.
+        db.execute("BEGIN IMMEDIATE")
+        tile = db.execute("SELECT * FROM map_tiles WHERE id = ?", (tile_id,)).fetchone()
+        if not tile or tile["tile_type"] != "spice_bloom_large" or tile["controller_village_id"] != village["id"]:
+            flash("You no longer control this bloom.")
+            return redirect(url_for("command_center_page"))
+        garrison = player_units_from_json(tile["garrison_json"])
+        if request.form.get("recall_all") == "1":
+            selected = dict(garrison)
+        else:
+            selected = {}
+            for key, available in garrison.items():
+                try:
+                    amount = int(request.form.get(f"unit_{key}", "0"))
+                except ValueError:
+                    flash("Enter whole numbers for recalled troops.")
+                    return redirect(url_for("command_center_page"))
+                if amount < 0 or amount > available:
+                    flash("Recall quantities must be between zero and the stationed amount.")
+                    return redirect(url_for("command_center_page"))
+                if amount:
+                    selected[key] = amount
+        if not selected:
+            flash("Select at least one stationed unit to recall.")
+            return redirect(url_for("command_center_page"))
+        remaining = {key: amount - selected.get(key, 0) for key, amount in garrison.items()}
+        remaining = normalize_player_units(remaining)
+        if not any(UNIT_TYPES[key]["damage"] > 0 for key in remaining) and request.form.get("confirm_undefended") != "1":
+            flash("Confirm that this recall leaves the bloom undefended.")
+            return redirect(url_for("command_center_page"))
+        duration = movement_duration_seconds(tile["x"], tile["y"], village["map_x"], village["map_y"], selected, village_faction(db, village))
+        now = utc_now()
+        return_at = (now + timedelta(seconds=duration)).isoformat()
+        db.execute("UPDATE map_tiles SET garrison_json = ? WHERE id = ?", (player_units_json(remaining), tile_id))
+        db.execute(
+            """INSERT INTO troop_movements
+                (village_id, target_tile_id, target_x, target_y, mission_type, units_json,
+                 survivors_json, status, started_at, arrive_at, return_at, report)
+                VALUES (?, ?, ?, ?, 'recall', ?, ?, 'returning', ?, ?, ?, ?)""",
+            (village["id"], tile_id, tile["x"], tile["y"], player_units_json(selected),
+             player_units_json(selected), now.isoformat(), now.isoformat(), return_at,
+             "Garrison recalled. Troops are returning home."),
+        )
+        db.commit()
+    flash("Recall dispatched. Troops become available when they arrive home.")
+    return redirect(url_for("command_center_page"))
 
 
 @app.route("/map/<int:tile_id>/harvest", methods=("POST",))
@@ -3578,6 +3732,27 @@ def command_center_page():
             """,
             (user["id"],),
         ).fetchall()
+    with db:
+        controlled_blooms = db.execute(
+            "SELECT * FROM map_tiles WHERE tile_type = 'spice_bloom_large' AND controller_village_id = ? ORDER BY x, y",
+            (village["id"],),
+        ).fetchall()
+    troop_totals = {key: {"home": units.get(key, 0), "travelling": 0, "stationed": 0} for key in UNIT_TYPES}
+    movement_units = {}
+    for movement in movements:
+        stack = player_units_from_json(movement["survivors_json"] if movement["status"] == "returning" else movement["units_json"])
+        movement_units[movement["id"]] = unit_report_rows(stack, user["faction_slug"])
+        for key, amount in stack.items():
+            troop_totals[key]["travelling"] += amount
+    garrisons = []
+    for tile in controlled_blooms:
+        stack = player_units_from_json(tile["garrison_json"])
+        for key, amount in stack.items():
+            troop_totals[key]["stationed"] += amount
+        garrisons.append({"tile": tile, "units": unit_report_rows(stack, user["faction_slug"]),
+                          "defended": any(UNIT_TYPES[key]["damage"] > 0 for key in stack)})
+    troop_overview = [{"name": unit_display_name(key, user["faction_slug"]), **counts,
+                       "total": sum(counts.values())} for key, counts in troop_totals.items() if sum(counts.values())]
     report_summaries = {report["id"]: report_summary(report) for report in recent_reports}
     intel_summaries = {intel["tile_id"]: tile_intel_summary(intel) for intel in recent_intel}
     bookmark_summaries = {bookmark["tile_id"]: tile_intel_summary(bookmark) if bookmark["scouted_at"] else None for bookmark in bookmarks}
@@ -3597,6 +3772,9 @@ def command_center_page():
     db.close()
     return render_template(
         "command_center.html",
+        troop_overview=troop_overview,
+        garrisons=garrisons,
+        movement_units=movement_units,
         user=user,
         village=village,
         buildings=buildings,
@@ -4038,6 +4216,15 @@ def alliance_home():
             flash("Join or create an alliance first.")
             return redirect(url_for("alliances"))
         alliance = get_alliance_stats(db, membership["alliance_id"])
+        objective_row = db.execute("SELECT target_blooms FROM alliance_spice_objectives WHERE alliance_id = ?", (membership["alliance_id"],)).fetchone()
+        target_blooms = objective_row["target_blooms"] if objective_row else 3
+        alliance_blooms = db.execute("""SELECT map_tiles.*, users.username FROM map_tiles
+            JOIN villages ON villages.id = map_tiles.controller_village_id
+            JOIN users ON users.id = villages.user_id
+            JOIN alliance_members ON alliance_members.user_id = users.id
+            WHERE alliance_members.alliance_id = ? AND map_tiles.tile_type = 'spice_bloom_large'
+            ORDER BY map_tiles.x, map_tiles.y""", (membership["alliance_id"],)).fetchall()
+
         members = db.execute(
             """
             SELECT users.id AS user_id, users.username, alliance_members.role, alliance_members.joined_at,
@@ -4079,6 +4266,8 @@ def alliance_home():
             ).fetchall()
     return render_template(
         "alliance_home.html",
+        target_blooms=target_blooms,
+        alliance_blooms=alliance_blooms,
         user=user,
         membership=membership,
         alliance=alliance,
@@ -4086,6 +4275,25 @@ def alliance_home():
         topics=topics,
         applications=applications,
     )
+
+
+@app.route("/alliance/spice-objective", methods=("POST",))
+@login_required
+def set_spice_objective():
+    with get_db() as db:
+        user, membership = get_alliance_member_or_redirect(db)
+        if not membership or membership["role"] not in ("leader", "officer"):
+            abort(403)
+        try:
+            target = int(request.form.get("target_blooms", ""))
+        except ValueError:
+            abort(400)
+        if not 1 <= target <= 20:
+            abort(400)
+        db.execute("INSERT INTO alliance_spice_objectives (alliance_id, target_blooms) VALUES (?, ?) ON CONFLICT(alliance_id) DO UPDATE SET target_blooms = excluded.target_blooms", (membership["alliance_id"], target))
+        db.commit()
+    flash("Alliance spice objective updated.")
+    return redirect(url_for("alliance_home"))
 
 
 @app.route("/alliance/leave", methods=("POST",))
@@ -4354,6 +4562,7 @@ def disband_alliance():
         db.execute("DELETE FROM alliance_topics WHERE alliance_id = ?", (alliance["id"],))
         db.execute("DELETE FROM alliance_applications WHERE alliance_id = ?", (alliance["id"],))
         db.execute("DELETE FROM alliance_members WHERE alliance_id = ?", (alliance["id"],))
+        db.execute("DELETE FROM alliance_spice_objectives WHERE alliance_id = ?", (alliance["id"],))
         db.execute("DELETE FROM alliances WHERE id = ?", (alliance["id"],))
         db.commit()
         flash("Alliance permanently disbanded.")
@@ -4578,12 +4787,7 @@ def claim_tutorial_reward():
             flash("Tutorial already complete.")
             return redirect(url_for("dashboard"))
         step = TUTORIAL_STEPS[progress["step_index"]]
-        objective_ready = True
-        if "building" in step:
-            objective_ready = objective_ready and buildings.get(step["building"], 0) >= step["level"]
-        if "unit" in step:
-            units = get_village_units(db, village["id"])
-            objective_ready = objective_ready and units.get(step["unit"], 0) >= step["amount"]
+        objective_ready = get_tutorial_state(db, user, buildings)["ready"]
         if not objective_ready:
             flash("Tutorial objective is not complete yet.")
             return redirect(url_for("dashboard"))
@@ -4600,9 +4804,8 @@ def claim_tutorial_reward():
 @app.route("/dev/boost-resources", methods=("POST",))
 @login_required
 def dev_boost_resources():
-    if not DEV_TOOLS_ENABLED:
-        flash("Dev tools are disabled.")
-        return redirect(url_for("dashboard"))
+    if not DEV_TOOLS_ENABLED or request.remote_addr not in ("127.0.0.1", "::1"):
+        abort(404)
     with get_db() as db:
         user = get_current_user(db)
         village = get_village(db, user["id"])
@@ -4617,9 +4820,11 @@ def dev_boost_resources():
 
 @app.route("/dev/reset-password", methods=("GET", "POST"))
 def dev_reset_password():
-    if not DEV_TOOLS_ENABLED:
-        flash("Dev tools are disabled.")
-        return redirect(url_for("login"))
+    admin_token = os.environ.get("DEV_ADMIN_TOKEN", "")
+    if not DEV_TOOLS_ENABLED or not admin_token or request.remote_addr not in ("127.0.0.1", "::1"):
+        abort(404)
+    if request.method == "POST" and not secrets.compare_digest(request.form.get("admin_token", ""), admin_token):
+        abort(403)
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         new_password = request.form.get("new_password", "")
@@ -4643,5 +4848,5 @@ def dev_reset_password():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
 
