@@ -117,6 +117,7 @@
                     </div>
                 {% endif %}
                 <form method="post" action="{{ url_for('upgrade', building_key=field.key) }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                     <input type="hidden" name="next" value="{{ request.path }}">
                     <button type="submit" {% if not field.can_upgrade %}disabled{% endif %}>{% if field.level == 0 %}Construct{% else %}Upgrade{% endif %}</button>
                 </form>
@@ -128,7 +129,7 @@
 </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     (() => {
         const spots = Array.from(document.querySelectorAll(".field-spot[data-field-key]"));
         const details = Array.from(document.querySelectorAll(".building-detail[data-field-detail]"));

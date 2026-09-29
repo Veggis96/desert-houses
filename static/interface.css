@@ -495,3 +495,6 @@ tbody tr:hover { background: #ffffff03; }
     .map-filters { gap: 5px; }
     .map-filters button { padding: 5px 7px; font-size: 10px; }
 }
+
+.topbar .nav-logout { display: inline-flex; margin: 0; }
+.topbar .nav-logout button { border: 0; background: transparent; color: inherit; padding: 0; font: inherit; box-shadow: none; cursor: pointer; }

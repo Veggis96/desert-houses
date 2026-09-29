@@ -13,6 +13,7 @@
         <div class="capacity">Reports: {{ reports|length }}</div>
         {% if filter_counts.unread > 0 %}
             <form method="post" action="{{ url_for('mark_reports_read') }}" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <input type="hidden" name="next" value="{{ request.full_path }}">
                 <button class="secondary compact" type="submit">Mark All Read</button>
             </form>

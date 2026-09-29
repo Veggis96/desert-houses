@@ -14,10 +14,10 @@
         <small id="username-help">3–24 letters, numbers, underscores or hyphens. Names are unique regardless of capitalization.</small>
 
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password" aria-describedby="password-help">
-        <small id="password-help">Use 10–128 characters. A long, unique passphrase works well.</small>
+        <input id="password" name="password" type="password" required minlength="15" maxlength="128" autocomplete="new-password" aria-describedby="password-help">
+        <small id="password-help">Use 15–128 characters. A long, unique passphrase works well.</small>
         <label for="confirm_password">Confirm password</label>
-        <input id="confirm_password" name="confirm_password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
+        <input id="confirm_password" name="confirm_password" type="password" required minlength="15" maxlength="128" autocomplete="new-password">
         {% if invite_required %}<label for="invite_code">Game invite code</label>
         <input id="invite_code" name="invite_code" type="password" required autocomplete="off">{% endif %}
 

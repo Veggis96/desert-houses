@@ -6,6 +6,7 @@ from datetime import timedelta
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import app as game
+from browser_client import BrowserClient
 from scripts.simulate_early_game import Projection
 
 
@@ -23,21 +24,25 @@ class EarlyGameTests(unittest.TestCase):
             with patch.object(game, "DB_PATH", str(Path(temp) / "game.db")), patch.object(game, "get_db", side_effect=tracked_get_db), patch.object(game, "utc_now", side_effect=lambda: self.now):
                 try:
                     game.app.config["TESTING"] = True
+                    game.app.test_client_class = BrowserClient
                     game.init_db()
                     client = game.app.test_client()
                     client.get("/register")
                     with client.session_transaction() as account_session:
                         signup_token = account_session["auth_csrf_token"]
-                    client.post("/register", data={"username": "player", "password": "test-password", "confirm_password": "test-password", "csrf_token": signup_token, "faction": faction})
-                    client.post("/login", data={"username": "player", "password": "test-password", "csrf_token": signup_token})
+                    client.post("/register", data={"username": "player", "password": "test-password-long", "confirm_password": "test-password-long", "csrf_token": signup_token, "faction": faction})
+                    client.post("/login", data={"username": "player", "password": "test-password-long", "csrf_token": signup_token})
                     def snapshot():
                         with game.get_db() as db:
                             user = db.execute("SELECT * FROM users WHERE username = 'player'").fetchone()
                             village = game.get_village(db, user["id"])
                             return village, game.get_buildings(db, village["id"]), game.get_village_units(db, village["id"])
                     def advance(seconds):
-                        self.now += timedelta(seconds=seconds)
-                        self.assertEqual(client.get("/dashboard").status_code, 200)
+                        while seconds > 0:
+                            interval = min(seconds, 1800)
+                            self.now += timedelta(seconds=interval)
+                            seconds -= interval
+                            self.assertEqual(client.get("/dashboard").status_code, 200)
                     def build(key, target):
                         for prerequisite, level in game.BUILDINGS[key].get("requires", {}).items():
                             build(prerequisite, level)

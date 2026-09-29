@@ -29,6 +29,7 @@
     <p class="muted">Shared territory held by current members. Progress drops when a bloom is lost or its owner leaves.</p>
     {% if membership.role in ['leader', 'officer'] %}
     <form method="post" action="{{ url_for('set_spice_objective') }}" class="wide-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
         <label for="target_blooms">Target blooms (1–20)</label>
         <input id="target_blooms" name="target_blooms" type="number" min="1" max="20" value="{{ target_blooms }}" required>
         <button type="submit">Set objective</button>
@@ -69,21 +70,25 @@
                                 <div class="button-row">
                                     {% if membership.role == 'leader' and member.role == 'member' %}
                                         <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='promote') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                                             <button class="secondary" type="submit">Promote</button>
                                         </form>
                                     {% endif %}
                                     {% if membership.role == 'leader' and member.role == 'officer' %}
                                         <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='demote') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                                             <button class="secondary" type="submit">Demote</button>
                                         </form>
                                     {% endif %}
                                     {% if membership.role == 'leader' and member.role in ['member', 'officer'] %}
                                         <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='transfer') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                                             <button class="secondary" type="submit">Transfer</button>
                                         </form>
                                     {% endif %}
                                     {% if member.role == 'member' %}
                                         <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='kick') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                                             <button class="danger" type="submit">Kick</button>
                                         </form>
                                     {% endif %}
@@ -108,6 +113,7 @@
     </div>
 
     <form method="post" action="{{ url_for('create_topic') }}" class="wide-form spaced-panel">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
         <label for="title">Topic Title</label>
         <input id="title" name="title" required maxlength="120">
 
@@ -126,6 +132,7 @@
                 </div>
                 {% if membership.role in ['leader', 'officer'] %}
                     <form method="post" action="{{ url_for('delete_topic', topic_id=topic.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                         <button class="secondary" type="submit">Delete Topic</button>
                     </form>
                 {% endif %}
@@ -153,9 +160,11 @@
                     </div>
                     <div class="button-row">
                         <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='approve') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                             <button type="submit">Approve</button>
                         </form>
                         <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='reject') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                             <button class="secondary" type="submit">Reject</button>
                         </form>
                     </div>
@@ -178,6 +187,7 @@
         {% if membership.role == 'leader' %}
             <p>Permanently deletes this alliance, its applications, topics, and posts. This cannot be undone.</p>
             <form method="post" action="{{ url_for('disband_alliance') }}" class="wide-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <label for="confirm_tag">Type {{ alliance.tag }} to confirm</label>
                 <input id="confirm_tag" name="confirm_tag" required maxlength="8">
                 <button class="danger" type="submit">Permanently Disband Alliance</button>
@@ -185,6 +195,7 @@
         {% else %}
             <p>Leave this alliance. Your topics and posts remain visible to current members.</p>
             <form method="post" action="{{ url_for('leave_alliance') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <button class="danger" type="submit">Leave Alliance</button>
             </form>
         {% endif %}

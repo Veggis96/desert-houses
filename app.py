@@ -9,19 +9,34 @@ import re
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import abort, jsonify, Flask, flash, redirect, render_template, request, session, url_for
+from flask import g, abort, jsonify, Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "game.db")
+DB_PATH = os.environ.get("GAME_DB_PATH") or os.path.join(BASE_DIR, "game.db")
+
+def security_config():
+    production = os.environ.get("GAME_ENV") == "production"
+    secret = os.environ.get("SECRET_KEY", "")
+    hosts = [host.strip() for host in os.environ.get("TRUSTED_HOSTS", "").split(",") if host.strip()]
+    if production and (len(secret) < 32 or secret == "dev-secret-change-me"):
+        raise RuntimeError("Production requires a securely generated SECRET_KEY of at least 32 characters.")
+    if production and not hosts:
+        raise RuntimeError("Production requires TRUSTED_HOSTS (comma-separated hostnames).")
+    if production and os.environ.get("FLASK_DEBUG", "0") == "1":
+        raise RuntimeError("Flask debug mode must be disabled in production.")
+    if production and os.environ.get("COOKIE_SECURE", "1") != "1":
+        raise RuntimeError("Production requires secure HTTPS cookies.")
+    return dict(PRODUCTION=production, SECRET_KEY=secret or secrets.token_hex(32),
+                TRUSTED_HOSTS=hosts or None, MAX_CONTENT_LENGTH=64 * 1024,
+                SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
+                SESSION_COOKIE_SECURE=production or os.environ.get("COOKIE_SECURE", "0") == "1",
+                PERMANENT_SESSION_LIFETIME=timedelta(hours=24))
+
 
 app = Flask(__name__)
-if os.environ.get("GAME_ENV") == "production" and not os.environ.get("SECRET_KEY"):
-    raise RuntimeError("Set SECRET_KEY before starting in production.")
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
-app.config.update(MAX_CONTENT_LENGTH=64 * 1024, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                  SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1")
+app.config.update(security_config())
 
 
 @app.context_processor
@@ -192,7 +207,7 @@ EMBASSY_ALLIANCE_LEVEL = 10
 CONSTRUCTION_QUEUE_LIMIT = 2
 UNIT_QUEUE_LIMIT = 3
 RESEARCH_QUEUE_LIMIT = 1
-DEV_TOOLS_ENABLED = os.environ.get("DEV_TOOLS_ENABLED", "0") == "1"
+DEV_TOOLS_ENABLED = os.environ.get("DEV_TOOLS_ENABLED", "0") == "1" and not app.config["PRODUCTION"]
 DEV_RESOURCE_AMOUNT = 9_999_999
 MAP_RADIUS = 15
 MAP_SIZE = MAP_RADIUS * 2 + 1
@@ -577,6 +592,10 @@ def utc_now():
 
 def parse_time(value):
     return datetime.fromisoformat(value)
+
+
+def safe_local_redirect(value):
+    return isinstance(value, str) and value.startswith("/") and not value.startswith("//") and "\\" not in value and not any(ord(character) < 32 for character in value)
 
 
 def compact_duration(seconds):
@@ -968,6 +987,11 @@ def init_db():
             """
         )
 
+        db.execute("""CREATE TABLE IF NOT EXISTS login_sessions (
+            token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL,
+            created_at REAL NOT NULL, last_seen REAL NOT NULL, expires_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id))""")
+        db.execute("CREATE INDEX IF NOT EXISTS login_sessions_user ON login_sessions(user_id)")
         db.execute("CREATE TABLE IF NOT EXISTS auth_attempts (bucket TEXT NOT NULL, attempted_at REAL NOT NULL)")
         db.execute("CREATE INDEX IF NOT EXISTS auth_attempts_bucket_time ON auth_attempts(bucket, attempted_at)")
         db.execute("""CREATE TABLE IF NOT EXISTS alliance_spice_objectives (
@@ -1017,7 +1041,7 @@ def get_current_user(db):
         return None
     return db.execute(
         """
-        SELECT users.*, factions.slug AS faction_slug, factions.name AS faction_name,
+        SELECT users.id, users.username, users.created_at, factions.slug AS faction_slug, factions.name AS faction_name,
                factions.description AS faction_description
         FROM users
         JOIN factions ON factions.id = users.faction_id
@@ -2780,19 +2804,73 @@ def index():
     return redirect(url_for("login"))
 
 
-DUMMY_PASSWORD_HASH = generate_password_hash("unused-login-timing-password")
+def hash_account_password(password):
+    return generate_password_hash(password, method="scrypt:32768:8:1")
+
+
+DUMMY_PASSWORD_HASH = hash_account_password("unused-login-timing-password")
+
+
+def login_token_hash():
+    token = session.get("login_token", "")
+    return hashlib.sha256(token.encode()).hexdigest() if isinstance(token, str) and token else None
+
+
+@app.before_request
+def validate_login_session():
+    g.csp_nonce = secrets.token_urlsafe(18)
+    if app.config["PRODUCTION"] and not request.is_secure:
+        abort(400, description="HTTPS is required.")
+    if request.endpoint == "static" or "user_id" not in session:
+        return
+    now = utc_now().timestamp()
+    token_hash = login_token_hash()
+    with get_db() as db:
+        row = db.execute("SELECT login_sessions.* FROM login_sessions JOIN users ON users.id = login_sessions.user_id WHERE token_hash = ? AND user_id = ?", (token_hash, session["user_id"])).fetchone()
+        valid = row and row["expires_at"] > now and row["last_seen"] > now - 3600
+        if valid:
+            db.execute("UPDATE login_sessions SET last_seen = ? WHERE token_hash = ?", (now, token_hash))
+        elif token_hash:
+            db.execute("DELETE FROM login_sessions WHERE token_hash = ?", (token_hash,))
+        db.commit()
+    if not valid:
+        session.clear()
+        flash("Your session ended. Please log in again.")
+        return redirect(url_for("login"))
+
+
+@app.after_request
+def security_headers(response):
+    nonce = getattr(g, "csp_nonce", "")
+    response.headers["Content-Security-Policy"] = ("default-src 'self'; script-src 'self' 'nonce-" + nonce + "'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'")
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.endpoint != "static":
+        response.headers["Cache-Control"] = "no-store"
+    if app.config["PRODUCTION"]:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000"
+    return response
 
 
 @app.context_processor
 def inject_auth_token():
     if "auth_csrf_token" not in session:
         session["auth_csrf_token"] = secrets.token_hex(32)
-    return {"auth_csrf_token": session["auth_csrf_token"]}
+    return {"auth_csrf_token": session["auth_csrf_token"], "csp_nonce": getattr(g, "csp_nonce", "")}
 
 
 @app.before_request
 def protect_account_forms():
-    if request.method == "POST" and request.endpoint in ("register", "login"):
+    if request.endpoint in ("dev_reset_password", "dev_boost_resources"):
+        if not DEV_TOOLS_ENABLED or app.config["PRODUCTION"] or request.remote_addr not in ("127.0.0.1", "::1"):
+            abort(404)
+        if request.endpoint == "dev_reset_password" and not os.environ.get("DEV_ADMIN_TOKEN"):
+            abort(404)
+    if request.method in ("POST", "PUT", "PATCH", "DELETE") and request.endpoint:
+        if request.endpoint not in ("register", "login", "dev_reset_password") and "user_id" not in session:
+            return redirect(url_for("login"))
         token = session.get("auth_csrf_token", "")
         if not token or not secrets.compare_digest(token.encode(), request.form.get("csrf_token", "").encode()):
             abort(400, description="This account form expired. Refresh the page and try again.")
@@ -2820,7 +2898,7 @@ def allow_auth_attempt(action, username=""):
 
 
 def valid_signup_password(password):
-    return 10 <= len(password) <= 128 and bool(password.strip())
+    return 15 <= len(password) <= 128 and bool(password.strip())
 
 
 @app.route("/register", methods=("GET", "POST"))
@@ -2847,7 +2925,7 @@ def register():
                 flash("Username must be 3–24 letters, numbers, underscores or hyphens.")
                 status = 400
             elif not valid_signup_password(password):
-                flash("Use a password or passphrase of 10–128 characters.")
+                flash("Use a password or passphrase of 15–128 characters.")
                 status = 400
             elif password != confirmation:
                 flash("Passwords do not match. Enter them again.")
@@ -2863,7 +2941,7 @@ def register():
                 else:
                     try:
                         cursor = db.execute("INSERT INTO users (username, password_hash, faction_id, created_at) VALUES (?, ?, ?, ?)",
-                                            (username, generate_password_hash(password), faction["id"], utc_now().isoformat()))
+                                            (username, hash_account_password(password), faction["id"], utc_now().isoformat()))
                         create_starting_village(db, cursor.lastrowid)
                         village = get_village(db, cursor.lastrowid)
                         ensure_village_map_position(db, village)
@@ -2898,18 +2976,68 @@ def login():
                     user = matches[0] if len(matches) == 1 else None
             valid = check_password_hash(user["password_hash"] if user else DUMMY_PASSWORD_HASH, password) if len(password) <= 4096 else False
             if user and valid:
+                token = secrets.token_urlsafe(32)
+                now = utc_now().timestamp()
+                with get_db() as db:
+                    db.execute("BEGIN IMMEDIATE")
+                    current = db.execute("SELECT password_hash FROM users WHERE id = ?", (user["id"],)).fetchone()
+                    if not current or current["password_hash"] != user["password_hash"]:
+                        flash("Invalid username or password.")
+                        return render_template("login.html"), 400
+                    db.execute("DELETE FROM login_sessions WHERE expires_at <= ? OR last_seen <= ?", (now, now - 3600))
+                    if not user["password_hash"].startswith("scrypt:32768:8:1$"):
+                        db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_account_password(password), user["id"]))
+                    db.execute("INSERT INTO login_sessions (token_hash, user_id, created_at, last_seen, expires_at) VALUES (?, ?, ?, ?, ?)", (hashlib.sha256(token.encode()).hexdigest(), user["id"], now, now, now + 86400))
+                    db.commit()
                 session.clear()
+                session.permanent = True
                 session["user_id"] = user["id"]
+                session["login_token"] = token
                 return redirect(url_for("dashboard"))
             flash("Invalid username or password.")
             status = 400
     return render_template("login.html"), status
 
 
-@app.route("/logout")
+@app.route("/logout", methods=("POST",))
 def logout():
+    with get_db() as db:
+        db.execute("DELETE FROM login_sessions WHERE token_hash = ?", (login_token_hash(),))
+        db.commit()
     session.clear()
     return redirect(url_for("login"))
+
+
+@app.route("/account", methods=("GET", "POST"))
+@login_required
+def account_settings():
+    with get_db() as db:
+        user = get_current_user(db)
+        if request.method == "POST":
+            if not allow_auth_attempt("login", "password-change:" + str(user["id"])):
+                flash("Too many attempts. Try again in 15 minutes.")
+                return render_template("account.html", user=user), 429
+            db.execute("BEGIN IMMEDIATE")
+            active = db.execute("SELECT 1 FROM login_sessions WHERE token_hash = ? AND user_id = ?", (login_token_hash(), user["id"])).fetchone()
+            if not active:
+                session.clear()
+                return redirect(url_for("login"))
+            row = db.execute("SELECT password_hash FROM users WHERE id = ?", (user["id"],)).fetchone()
+            current = request.form.get("current_password", "")
+            password = request.form.get("new_password", "")
+            if len(current) > 4096 or not check_password_hash(row["password_hash"], current):
+                flash("Current password is incorrect.")
+                return render_template("account.html", user=user), 400
+            if not valid_signup_password(password) or password != request.form.get("confirm_password", ""):
+                flash("Use matching new passwords of 15–128 characters.")
+                return render_template("account.html", user=user), 400
+            db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_account_password(password), user["id"]))
+            db.execute("DELETE FROM login_sessions WHERE user_id = ?", (user["id"],))
+            db.commit()
+            session.clear()
+            flash("Password changed. All devices have been signed out. Log in with your new password.")
+            return redirect(url_for("login"))
+    return render_template("account.html", user=user)
 
 
 @app.route("/dashboard")
@@ -3336,7 +3464,7 @@ def plan_map_mission(tile_id):
 @login_required
 def bookmark_tile(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         user = get_current_user(db)
@@ -3357,7 +3485,7 @@ def bookmark_tile(tile_id):
 @login_required
 def remove_tile_bookmark(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         user = get_current_user(db)
@@ -3371,7 +3499,7 @@ def remove_tile_bookmark(tile_id):
 @login_required
 def send_map_raid(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         user = get_current_user(db)
@@ -3429,7 +3557,7 @@ def send_map_raid(tile_id):
 @login_required
 def send_map_scout(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         user = get_current_user(db)
@@ -3526,7 +3654,7 @@ def prepare_map_operation(db, tile_id):
 @login_required
 def capture_spice_bloom(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         village, tile = prepare_map_operation(db, tile_id)
@@ -3551,7 +3679,7 @@ def capture_spice_bloom(tile_id):
 @login_required
 def reinforce_spice_bloom(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         village, tile = prepare_map_operation(db, tile_id)
@@ -3626,7 +3754,7 @@ def recall_spice_bloom(tile_id):
 @login_required
 def harvest_spice_bloom(tile_id):
     next_url = request.form.get("next") or url_for("map_page", tile_id=tile_id)
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("map_page", tile_id=tile_id)
     with get_db() as db:
         village, tile = prepare_map_operation(db, tile_id)
@@ -3692,7 +3820,7 @@ def inbox():
 @login_required
 def mark_reports_read():
     next_url = request.form.get("next") or url_for("inbox")
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("inbox")
     with get_db() as db:
         user = get_current_user(db)
@@ -4657,7 +4785,7 @@ def disband_alliance():
 @login_required
 def upgrade(building_key):
     next_url = request.form.get("next") or url_for("dashboard")
-    if not next_url.startswith("/"):
+    if not safe_local_redirect(next_url):
         next_url = url_for("dashboard")
     if building_key not in BUILDINGS:
         flash("Unknown building.")
@@ -4912,8 +5040,8 @@ def dev_reset_password():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         new_password = request.form.get("new_password", "")
-        if not username or not new_password:
-            flash("Username and new password are required.")
+        if not username or not valid_signup_password(new_password):
+            flash("Username and a new password of 15–128 characters are required.")
             return redirect(url_for("dev_reset_password"))
         with get_db() as db:
             user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
@@ -4922,8 +5050,9 @@ def dev_reset_password():
                 return redirect(url_for("dev_reset_password"))
             db.execute(
                 "UPDATE users SET password_hash = ? WHERE id = ?",
-                (generate_password_hash(new_password), user["id"]),
+                (hash_account_password(new_password), user["id"]),
             )
+            db.execute("DELETE FROM login_sessions WHERE user_id = ?", (user["id"],))
             db.commit()
         flash("Password reset. Log in with the new password.")
         return redirect(url_for("login"))
@@ -4932,5 +5061,5 @@ def dev_reset_password():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
+    app.run(debug=not app.config["PRODUCTION"] and os.environ.get("FLASK_DEBUG", "0") == "1")
 

@@ -103,8 +103,14 @@ Development tools and debug mode are disabled by default. Session signing uses `
 
 ## Player accounts
 
-New players choose a permanent faction, a 3–24 character username (letters, numbers, `_`, `-`), and a confirmed password/passphrase of 10–128 characters. Names cannot duplicate an existing username by capitalization. Login accepts capitalization differences for unambiguous names while retaining exact-match access to legacy accounts.
+New players choose a permanent faction, a 3–24 character username (letters, numbers, `_`, `-`), and a confirmed password/passphrase of 15–128 characters. Names cannot duplicate an existing username by capitalization. Login accepts capitalization differences for unambiguous names while retaining exact-match access to legacy accounts.
 
 Account creation assigns a settlement/map position atomically. Full worlds reject sign-up without leaving an incomplete account; player-controlled blooms are not replaced by new settlements. Sign-up/login forms include CSRF protection and persistent rate limits.
 
 Registration is open by default. Set `REGISTRATION_INVITE_CODE` in the server environment to require a shared invitation code for a private playtest. Password recovery remains the protected local host tool; email verification/recovery is not configured.
+
+## Account security
+
+Passwords are salted scrypt hashes, never plaintext. Legacy hashes are upgraded after successful login. Every modifying form has session CSRF protection; logout uses POST and revokes the server-side session. Sessions expire after one hour idle or 24 hours total. Changing a password from Account requires the current password and signs out all devices; the local development reset also revokes sessions.
+
+Game pages use no-store caching, script nonces, anti-framing and content-type security headers. Account hashes are excluded from template user data. Production startup requires a strong persistent signing key, trusted hostnames, and Secure cookies; production requests require HTTPS and dev tools are blocked. See [security and deployment notes](docs/SECURITY.md). This code update does not configure public hosting or encrypt the SQLite file/backups.

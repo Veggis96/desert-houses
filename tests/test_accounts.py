@@ -12,7 +12,7 @@ class AccountTests(unittest.TestCase):
     tearDown = fixtures.GarrisonRecallTests.tearDown
 
     def signup(self, **changes):
-        self.client.get("/logout")
+        self.client.post("/logout")
         self.client.get("/register")
         with self.client.session_transaction() as state:
             token = state["auth_csrf_token"]
@@ -55,13 +55,13 @@ class AccountTests(unittest.TestCase):
         self.client.get("/login")
         with self.client.session_transaction() as state:
             token = state["auth_csrf_token"]
-        response = self.client.post("/login", data={"username": "COMMANDER", "password": "test-password", "csrf_token": token})
+        response = self.client.post("/login", data={"username": "COMMANDER", "password": "test-password-long", "csrf_token": token})
         self.assertEqual(response.status_code, 302)
         self.assertIn("/dashboard", response.location)
 
     def test_missing_and_malformed_form_tokens_are_rejected(self):
-        self.client.get("/logout")
-        self.assertEqual(self.client.post("/register", data={}).status_code, 400)
+        self.client.post("/logout")
+        self.assertEqual(self.client.post("/register", data={}, csrf=False).status_code, 400)
         self.client.get("/login")
         self.assertEqual(self.client.post("/login", data={"csrf_token": "unicode-ø"}).status_code, 400)
         self.assertEqual(self.client.post("/login", data={"csrf_token": "wrong"}).status_code, 400)
@@ -82,7 +82,7 @@ class AccountTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT COUNT(*) FROM villages").fetchone()[0], 1)
 
     def test_login_limit_expires(self):
-        self.client.get("/logout")
+        self.client.post("/logout")
         self.client.get("/login")
         with self.client.session_transaction() as state:
             token = state["auth_csrf_token"]
@@ -94,7 +94,7 @@ class AccountTests(unittest.TestCase):
             self.assertEqual(self.client.post("/login", data=data).status_code, 400)
         self.assertEqual(self.client.post("/login", data=data).status_code, 429)
         with patch.object(game, "utc_now", return_value=game.utc_now() + timedelta(minutes=16)):
-            self.assertEqual(self.client.post("/login", data={**data, "password": "test-password"}).status_code, 302)
+            self.assertEqual(self.client.post("/login", data={**data, "password": "test-password-long"}).status_code, 302)
 
     def test_registration_limit_is_scoped_to_client_address(self):
         with game.get_db() as db:

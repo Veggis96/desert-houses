@@ -78,6 +78,7 @@
                     </div>
                 {% endif %}
                 <form method="post" action="{{ url_for('start_research', research_key=research.key) }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                     <input type="hidden" name="next" value="{{ url_for('research_center_page') }}">
                     <button type="submit" {% if not research.can_research %}disabled{% endif %}>Research</button>
                 </form>
@@ -88,7 +89,7 @@
 </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     (() => {
         const timers = Array.from(document.querySelectorAll(".research-item[data-finish-at]"));
         if (!timers.length) return;

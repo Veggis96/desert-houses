@@ -65,6 +65,7 @@
             {% if not garrison.defended %}<p class="muted">Undefended: no combat troops stationed here.</p>{% endif %}
             {% if garrison.units %}
             <form method="post" action="{{ url_for('recall_spice_bloom', tile_id=garrison.tile.id) }}" class="wide-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 {% for unit in garrison.units %}
                 <label for="recall-{{ garrison.tile.id }}-{{ unit.key }}">{{ unit.name }}: {{ unit.amount }} stationed</label>
                 <input id="recall-{{ garrison.tile.id }}-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" min="0" max="{{ unit.amount }}" value="0" step="1">
@@ -207,6 +208,7 @@
                     {% endif %}
                 </a>
                 <form method="post" action="{{ url_for('remove_tile_bookmark', tile_id=bookmark.tile_id) }}" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                     <input type="hidden" name="next" value="{{ request.path }}">
                     <button class="secondary compact" type="submit">Remove</button>
                 </form>
@@ -219,7 +221,7 @@
 </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     (() => {
         const timers = Array.from(document.querySelectorAll(".movement-item[data-finish-at]"));
         if (!timers.length) return;

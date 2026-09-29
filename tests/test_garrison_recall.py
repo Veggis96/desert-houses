@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import app as game
+from browser_client import BrowserClient
 
 
 class GarrisonRecallTests(unittest.TestCase):
@@ -23,13 +24,14 @@ class GarrisonRecallTests(unittest.TestCase):
         self.connection_patch = patch.object(game, "get_db", side_effect=tracked_get_db)
         self.connection_patch.start()
         game.app.config["TESTING"] = True
+        game.app.test_client_class = BrowserClient
         game.init_db()
         self.client = game.app.test_client()
         self.client.get("/register")
         with self.client.session_transaction() as account_session:
             signup_token = account_session["auth_csrf_token"]
-        self.client.post("/register", data={"username": "commander", "password": "test-password", "confirm_password": "test-password", "csrf_token": signup_token, "faction": "atreides"})
-        self.client.post("/login", data={"username": "commander", "password": "test-password", "csrf_token": signup_token})
+        self.client.post("/register", data={"username": "commander", "password": "test-password-long", "confirm_password": "test-password-long", "csrf_token": signup_token, "faction": "atreides"})
+        self.client.post("/login", data={"username": "commander", "password": "test-password-long", "csrf_token": signup_token})
         with game.get_db() as db:
             user = db.execute("SELECT id FROM users WHERE username = 'commander'").fetchone()
             village = game.get_village(db, user["id"])
@@ -99,7 +101,7 @@ class GarrisonRecallTests(unittest.TestCase):
             db.commit()
         self.recall(recall_all="1", confirm_undefended="1")
         self.assertEqual(len(self.state()[1]), 0)
-        self.client.get("/logout")
+        self.client.post("/logout")
         response = self.recall(recall_all="1", confirm_undefended="1")
         self.assertIn("/login", response.location)
 

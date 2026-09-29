@@ -12,7 +12,7 @@ Set `FLASK_DEBUG=1` only for local debugging. Keep it off for remote access. The
 
 ## Production setup
 
-Set `GAME_ENV=production` and a securely generated, persistent `SECRET_KEY`. Startup rejects production mode without a secret. Set `COOKIE_SECURE=1` when serving over HTTPS; leave it off only for HTTP local development. Cookies are HttpOnly and SameSite=Lax.
+Set `GAME_ENV=production`, a securely generated persistent `SECRET_KEY` of at least 32 characters, and `TRUSTED_HOSTS` containing comma-separated trusted hostnames. Production defaults to Secure cookies and rejects `COOKIE_SECURE=0`. All production requests must reach the application as HTTPS. Cookies are HttpOnly and SameSite=Lax. Development tools are unavailable in production even if enabled in the environment.
 
 Initialize/migrate before launching a production WSGI server:
 
@@ -35,3 +35,13 @@ Run database initialization after updating to add the persistent `auth_attempts`
 Set a nonempty `REGISTRATION_INVITE_CODE` in the process environment to require it during registration. Restart the server after changing this environment value. Do not commit the code or render it in the page; share it directly with invited players. Leave the variable unset for open registration.
 
 Existing account passwords remain usable, including short legacy passwords; the new length rule applies at sign-up. Email verification and email password recovery require a mail provider and have not been added.
+
+## Revocable sessions and protected forms
+
+The update adds the `login_sessions` table. Existing cookie-only logins are intentionally invalidated and players must log in again. Server records store hashes of session tokens. Logout revokes the current session; password changes and local resets revoke all sessions for that player. Idle expiry is one hour, with an absolute 24-hour limit. Long game waits require logging back in, but the village keeps producing resources.
+
+Every modifying form, including gameplay and logout, requires a session CSRF token. Logout is POST-only. Inline scripts receive per-response CSP nonces; adding scripts without these nonces will cause browsers to block them.
+
+Set `GAME_DB_PATH` to an absolute path in a restricted server data directory when hosting. The directory must already exist. This setting selects the database path; it does not move an existing save or encrypt its contents. Keep backups encrypted and outside the served project tree.
+
+If TLS terminates at a reverse proxy, the app must receive a trusted HTTPS scheme. No forwarding headers are trusted by default. Configure the server/proxy integration only for your known proxy and block direct public access to the backend. Without that configuration, production requests are rejected rather than processed over an unverified HTTP scheme.

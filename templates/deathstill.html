@@ -54,6 +54,7 @@
                 <div><dt>All</dt><dd>+{{ unit.total_yield }} Water</dd></div>
             </dl>
             <form method="post" action="{{ url_for('render_units_in_deathstill', unit_key=unit.key) }}" onsubmit="return confirm('These units will be removed permanently. Continue?')">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <label for="render-{{ unit.key }}">Amount</label>
                 <div class="deathstill-action">
                     <input id="render-{{ unit.key }}" name="amount" type="number" value="1" min="1" max="{{ unit.owned }}" {% if unit.owned == 0 or free_capacity <= 0 %}disabled{% endif %}>

@@ -37,9 +37,11 @@
                     </div>
                     <div class="button-row">
                         <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='approve') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                             <button type="submit">Approve</button>
                         </form>
                         <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='reject') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                             <button class="secondary" type="submit">Reject</button>
                         </form>
                     </div>
@@ -71,6 +73,7 @@
             </div>
         </div>
         <form method="post" action="{{ url_for('create_alliance') }}" class="wide-form" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
             <label for="name">Alliance Name</label>
             <input id="name" name="alliance_name" required maxlength="80" autocomplete="off" autocapitalize="words" spellcheck="false">
 
@@ -108,6 +111,7 @@
                 </div>
                 {% if has_embassy and not membership and not active_application %}
                     <form method="post" action="{{ url_for('apply_to_alliance', alliance_id=alliance.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                         <label for="message-{{ alliance.id }}">Application Message</label>
                         <input id="message-{{ alliance.id }}" name="message" maxlength="240" placeholder="Optional message">
                         <button type="submit">Apply</button>

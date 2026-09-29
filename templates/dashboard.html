@@ -180,6 +180,7 @@
                     </div>
                 {% endif %}
                 <form method="post" action="{{ url_for('upgrade', building_key=building.key) }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                     <input type="hidden" name="next" value="{{ request.path }}">
                     <button type="submit" {% if not building.can_upgrade %}disabled{% endif %}>{% if building.level == 0 %}Construct{% else %}Upgrade{% endif %}</button>
                 </form>
@@ -208,6 +209,7 @@
             </div>
             {% if tutorial.ready %}
                 <form method="post" action="{{ url_for('claim_tutorial_reward') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                     <button type="submit">Claim Reward</button>
                 </form>
             {% endif %}
@@ -256,6 +258,7 @@
                 <h2>Dev Tools</h2>
             </div>
             <form method="post" action="{{ url_for('dev_boost_resources') }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <button class="secondary" type="submit">Boost Resources</button>
             </form>
         </div>
@@ -287,7 +290,7 @@
 
 </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
     (() => {
         const spots = Array.from(document.querySelectorAll(".building-spot[data-building-key]"));
         const details = Array.from(document.querySelectorAll(".building-detail[data-building-detail]"));

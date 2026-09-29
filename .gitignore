@@ -3,3 +3,11 @@ __pycache__/
 .venv/
 game.db
 .env
+
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+.env.*
+*.pem
+*.key

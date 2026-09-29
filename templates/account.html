@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Account Security{% endblock %}
+{% block content %}
+<section class="panel auth-panel">
+    <h1>Account Security</h1>
+    <p>Signed in as {{ user.username }}.</p>
+    <p class="muted">Changing your password signs out every device. Passwords are never displayed.</p>
+    <form method="post" class="wide-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
+        <label for="current_password">Current password</label>
+        <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
+        <label for="new_password">New password</label>
+        <input id="new_password" name="new_password" type="password" minlength="15" maxlength="128" required autocomplete="new-password">
+        <label for="confirm_password">Confirm new password</label>
+        <input id="confirm_password" name="confirm_password" type="password" minlength="15" maxlength="128" required autocomplete="new-password">
+        <p class="muted">Use a unique passphrase of 15–128 characters.</p>
+        <button type="submit">Change password and sign out all devices</button>
+    </form>
+</section>
+{% endblock %}

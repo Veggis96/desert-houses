@@ -46,13 +46,15 @@ class GameSystemsTests(unittest.TestCase):
             db.commit()
         fresh = self.client.get(url, query_string={"unit_knife_fighter": 3}).get_json()
         self.assertGreater(fresh["known_defense"], 0)
-        with patch.object(game, "utc_now", return_value=game.utc_now() + timedelta(hours=2)):
-            stale = self.client.get(url, query_string={"unit_knife_fighter": 3}).get_json()
+        with game.get_db() as db:
+            db.execute("UPDATE tile_intel SET scouted_at = ? WHERE tile_id = ?", ((game.utc_now() - timedelta(hours=2)).isoformat(), tile["id"]))
+            db.commit()
+        stale = self.client.get(url, query_string={"unit_knife_fighter": 3}).get_json()
         self.assertTrue(stale["stale"])
         self.assertIn("Uncertain", stale["risk"])
         for value in ("4", "-1", "1.2"):
             self.assertEqual(self.client.get(url, query_string={"unit_knife_fighter": value}).status_code, 400)
-        self.client.get("/logout")
+        self.client.post("/logout")
         self.assertEqual(self.client.get(url).status_code, 302)
 
     def test_transport_preview_matches_dispatch_and_capture_stays(self):

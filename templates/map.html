@@ -91,6 +91,7 @@
         </section>
         {% endif %}
         <form method="post" action="{{ url_for('remove_tile_bookmark' if selected_tile.id in bookmarked_tile_ids else 'bookmark_tile', tile_id=selected_tile.id) }}" class="inline-form bookmark-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
             <input type="hidden" name="next" value="{{ request.path }}">
             <button class="secondary compact" type="submit">{{ 'Remove Bookmark' if selected_tile.id in bookmarked_tile_ids else 'Bookmark Target' }}</button>
         </form>
@@ -164,6 +165,7 @@
 
         {% if can_capture %}
             <form method="post" action="{{ url_for('capture_spice_bloom', tile_id=selected_tile.id) }}" data-plan-mission="capture" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form operation-form capture-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Capture Large Bloom</p>
                 <p class="muted compact-copy">Defeat its current defenders. Surviving units remain here as your garrison.</p>
@@ -180,6 +182,7 @@
         {% if controls_selected_bloom %}<p><a class="button-link secondary" href="{{ url_for('command_center_page') }}">Manage garrison / Recall troops</a></p>{% endif %}
         {% if can_reinforce %}
             <form method="post" action="{{ url_for('reinforce_spice_bloom', tile_id=selected_tile.id) }}" data-plan-mission="reinforce" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form operation-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Reinforce Garrison</p>
                 {% for unit in unit_cards %}
@@ -192,6 +195,7 @@
 
         {% if can_harvest %}
             <form method="post" action="{{ url_for('harvest_spice_bloom', tile_id=selected_tile.id) }}" data-plan-mission="harvest" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form operation-form harvest-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Harvest Spice Sand</p>
                 <p class="muted compact-copy">Choose the extraction policy before departure. The Carryall evacuates automatically; no live monitoring is required.</p>
@@ -219,6 +223,7 @@
 
         {% if can_send %}
             <form method="post" action="{{ url_for('send_map_raid', tile_id=selected_tile.id) }}" data-plan-mission="raid" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form raid-form" data-defender-defense="{{ defender_summary.defense if has_tile_intel else 0 }}" data-defender-attack="{{ defender_summary.attack if has_tile_intel else 0 }}" data-visible-loot="{{ visible_loot|round|int }}" data-distance="{{ distance }}">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Send Raid</p>
                 {% for unit in unit_cards %}
@@ -242,6 +247,7 @@
 
         {% if can_scout %}
             <form method="post" action="{{ url_for('send_map_scout', tile_id=selected_tile.id) }}" data-plan-mission="scout" data-plan-url="{{ url_for('plan_map_mission', tile_id=selected_tile.id) }}" class="wide-form raid-form">
+        <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Send Scouts</p>
                 {% for unit in scout_cards %}
@@ -307,7 +313,7 @@
     </div>
 </section>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     (() => {
         const timers = Array.from(document.querySelectorAll(".movement-item[data-finish-at]"));
         if (!timers.length) return;
@@ -596,6 +602,6 @@
         if (new URLSearchParams(location.search).get('focus') === 'selected') requestAnimationFrame(locateSelected);
     })();
 </script>
-<script src="{{ url_for('static', filename='mission-planner.js') }}" defer></script>
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='mission-planner.js') }}" defer></script>
 {% endblock %}
 
