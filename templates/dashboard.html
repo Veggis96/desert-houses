@@ -149,6 +149,8 @@
                         {% endif %}
                     {% elif building.key == 'embassy' %}
                         <p class="muted">Unlocks alliances at level {{ embassy_alliance_level }}.</p>
+                    {% elif building.key == 'deathstill' %}
+                        <p class="muted">Reclaims Water from troops permanently rendered inside the facility. Higher levels recover a greater share.</p>
                     {% else %}
                         <p class="muted">Infrastructure building.</p>
                     {% endif %}

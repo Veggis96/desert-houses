@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Deathstill{% endblock %}
+
+{% block content %}
+<div class="base-layout">
+{% include "base_nav.html" %}
+<div class="base-main">
+<section class="hero deathstill-hero">
+    <div>
+        <p class="eyebrow">Water Reclamation</p>
+        <h1>Deathstill</h1>
+        <p>Render troops who have returned to the village and reclaim their water. The choice is permanent.</p>
+    </div>
+    <div class="stat-stack">
+        <div class="capacity">Level {{ level }}</div>
+        <div class="capacity">{{ (recovery_rate * 100)|round|int }}% recovery</div>
+        <div class="capacity">{{ village.water|round|int }} / {{ capacity }} Water</div>
+    </div>
+</section>
+
+<section class="panel deathstill-overview">
+    <div class="deathstill-art" aria-hidden="true">
+        <img src="{{ url_for('static', filename='images/base/integrated/deathstill.png') }}" alt="">
+    </div>
+    <div>
+        <p class="eyebrow">Stored Water</p>
+        <h2>{{ free_capacity|round|int }} capacity available</h2>
+        <p class="muted">Level {{ level }} recovers {{ (recovery_rate * 100)|round|int }}% of each unit's original Water training cost. Upgrade the building to reduce waste.</p>
+        <div class="deathstill-meter">
+            <span style="width: {{ [((village.water / capacity) * 100), 100]|min }}%"></span>
+        </div>
+    </div>
+</section>
+
+<section class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Available Personnel</p>
+            <h2>Choose units to render</h2>
+        </div>
+        <p class="muted">Only troops currently inside this village are listed. Vehicles cannot be processed.</p>
+    </div>
+    <div class="deathstill-grid">
+        {% for unit in reclaimable_units %}
+        <article class="deathstill-unit-card {% if unit.owned == 0 %}empty{% endif %}">
+            <div>
+                <p class="eyebrow">{{ unit.category }}</p>
+                <h3>{{ unit.name }}</h3>
+                <p class="muted">{{ unit.owned }} in village</p>
+            </div>
+            <dl>
+                <div><dt>Each</dt><dd>+{{ unit.yield_per_unit }} Water</dd></div>
+                <div><dt>All</dt><dd>+{{ unit.total_yield }} Water</dd></div>
+            </dl>
+            <form method="post" action="{{ url_for('render_units_in_deathstill', unit_key=unit.key) }}" onsubmit="return confirm('These units will be removed permanently. Continue?')">
+                <label for="render-{{ unit.key }}">Amount</label>
+                <div class="deathstill-action">
+                    <input id="render-{{ unit.key }}" name="amount" type="number" value="1" min="1" max="{{ unit.owned }}" {% if unit.owned == 0 or free_capacity <= 0 %}disabled{% endif %}>
+                    <button class="danger" type="submit" {% if unit.owned == 0 or free_capacity <= 0 %}disabled{% endif %}>Render</button>
+                </div>
+            </form>
+        </article>
+        {% endfor %}
+    </div>
+    {% if free_capacity <= 0 %}<p class="warning compact-copy">Water storage is full. Spend Water before rendering troops.</p>{% endif %}
+</section>
+</div>
+</div>
+{% endblock %}

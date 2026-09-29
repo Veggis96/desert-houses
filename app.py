@@ -2290,7 +2290,23 @@ def open_building_endpoint(building_key):
         return "influence_sanctuary_page"
     if building_key == "flight_works":
         return "flight_works_page"
+    if building_key == "deathstill":
+        return "deathstill_page"
     return None
+
+
+def deathstill_recovery_rate(level):
+    """Return the share of a unit's training-water cost recovered by a Deathstill."""
+    if level <= 0:
+        return 0
+    return min(0.65 + (level - 1) * 0.03, 0.95)
+
+
+def deathstill_water_yield(unit_key, level):
+    if unit_key not in UNIT_TYPES or UNIT_TYPES[unit_key]["category"] == "vehicle":
+        return 0
+    water_cost = UNIT_TYPES[unit_key]["cost"].get("water", 0)
+    return max(int(math.floor(water_cost * deathstill_recovery_rate(level))), 1)
 
 
 def build_building_cards(village, buildings, construction_queue, research_levels, faction_slug, building_keys=None):
@@ -2318,6 +2334,8 @@ def build_building_cards(village, buildings, construction_queue, research_levels
                 "production_after": spice_refinery_output_rate(effective_level + 1, faction_slug, research_levels) if key == "spice_refinery" else production_for(key, effective_level + 1, faction_slug),
                 "storage_before": 1000 + effective_level * 500,
                 "storage_after": 1000 + (effective_level + 1) * 500,
+                "deathstill_rate_before": deathstill_recovery_rate(effective_level) * 100 if key == "deathstill" else None,
+                "deathstill_rate_after": deathstill_recovery_rate(effective_level + 1) * 100 if key == "deathstill" else None,
                 "unlocks": [building_display_name(other, faction_slug) for other, definition in BUILDINGS.items()
                             if definition.get("requires", {}).get(key) == effective_level + 1]
                            + (["Alliances"] if key == "embassy" and effective_level + 1 == EMBASSY_ALLIANCE_LEVEL else []),
@@ -2458,6 +2476,14 @@ def base_nav_items(buildings, faction_slug):
             "level": buildings.get("flight_works", 0),
             "locked": buildings.get("flight_works", 0) <= 0,
             "hint": "Aircraft and harvesters",
+        },
+        {
+            "key": "deathstill",
+            "label": "Deathstill",
+            "endpoint": "deathstill_page",
+            "level": buildings.get("deathstill", 0),
+            "locked": buildings.get("deathstill", 0) <= 0,
+            "hint": "Reclaim troop water",
         },
         {
             "key": "research_center",
@@ -3666,6 +3692,97 @@ def influence_sanctuary_page():
         base_nav=base_nav_items(buildings, user["faction_slug"]),
         active_base_tab="influence_sanctuary",
     )
+
+
+@app.route("/buildings/deathstill")
+@login_required
+def deathstill_page():
+    db, user, village, buildings, research_levels, units = prepare_village_context()
+    level = buildings.get("deathstill", 0)
+    if level <= 0:
+        db.close()
+        flash("Construct the Deathstill before using it.")
+        return redirect(url_for("dashboard"))
+
+    recovery_rate = deathstill_recovery_rate(level)
+    capacity = storage_capacity(buildings)
+    reclaimable_units = []
+    for key, config in UNIT_TYPES.items():
+        if config["category"] == "vehicle":
+            continue
+        yield_per_unit = deathstill_water_yield(key, level)
+        owned = units.get(key, 0)
+        reclaimable_units.append({
+            "key": key,
+            "name": unit_display_name(key, user["faction_slug"]),
+            "category": config["category"],
+            "owned": owned,
+            "yield_per_unit": yield_per_unit,
+            "total_yield": yield_per_unit * owned,
+        })
+    db.close()
+    return render_template(
+        "deathstill.html",
+        user=user,
+        village=village,
+        buildings=buildings,
+        level=level,
+        recovery_rate=recovery_rate,
+        capacity=capacity,
+        free_capacity=max(capacity - village["water"], 0),
+        reclaimable_units=reclaimable_units,
+        base_nav=base_nav_items(buildings, user["faction_slug"]),
+        active_base_tab="deathstill",
+    )
+
+
+@app.route("/buildings/deathstill/render/<unit_key>", methods=("POST",))
+@login_required
+def render_units_in_deathstill(unit_key):
+    if unit_key not in UNIT_TYPES or UNIT_TYPES[unit_key]["category"] == "vehicle":
+        flash("That unit cannot be processed in the Deathstill.")
+        return redirect(url_for("deathstill_page"))
+    try:
+        amount = int(request.form.get("amount", "1"))
+    except ValueError:
+        amount = 1
+    amount = max(1, min(amount, 999))
+
+    with get_db() as db:
+        user = get_current_user(db)
+        village = get_village(db, user["id"])
+        village, buildings = update_resources(db, village, user["faction_slug"])
+        process_unit_training_queue(db, village["id"])
+        db.commit()
+        village = get_village(db, user["id"])
+        buildings = get_buildings(db, village["id"])
+        level = buildings.get("deathstill", 0)
+        if level <= 0:
+            flash("Construct the Deathstill before using it.")
+            return redirect(url_for("dashboard"))
+
+        available = get_village_units(db, village["id"]).get(unit_key, 0)
+        if amount > available:
+            flash("Not enough units are present in the village.")
+            return redirect(url_for("deathstill_page"))
+
+        capacity = storage_capacity(buildings)
+        free_capacity = max(capacity - village["water"], 0)
+        if free_capacity <= 0:
+            flash("Water storage is full. Spend water before using the Deathstill.")
+            return redirect(url_for("deathstill_page"))
+
+        potential_water = deathstill_water_yield(unit_key, level) * amount
+        recovered_water = min(potential_water, free_capacity)
+        remove_village_units(db, village["id"], unit_key, amount)
+        db.execute("UPDATE villages SET water = water + ? WHERE id = ?", (recovered_water, village["id"]))
+        db.commit()
+        wasted = potential_water - recovered_water
+        message = f"Rendered {amount} {unit_display_name(unit_key, user['faction_slug'])} and recovered {recovered_water:.0f} Water."
+        if wasted > 0:
+            message += f" {wasted:.0f} Water was lost because storage filled up."
+        flash(message)
+    return redirect(url_for("deathstill_page"))
 
 
 @app.route("/buildings/research_center")

@@ -16,7 +16,7 @@
         <a class="brand" href="{{ url_for('dashboard') if session.get('user_id') else url_for('login') }}"><span class="brand-mark" aria-hidden="true">◈</span><span>Desert Houses<small>A world worth claiming</small></span></a>
         <nav aria-label="Main navigation">
             {% if session.get('user_id') %}
-                <a class="{% if request.endpoint in ['dashboard', 'resource_fields_page', 'barracks_page', 'flight_works_page', 'research_center_page', 'influence_sanctuary_page', 'command_center_page'] %}active{% endif %}" href="{{ url_for('dashboard') }}">Base</a>
+                <a class="{% if request.endpoint in ['dashboard', 'resource_fields_page', 'barracks_page', 'flight_works_page', 'deathstill_page', 'render_units_in_deathstill', 'research_center_page', 'influence_sanctuary_page', 'command_center_page'] %}active{% endif %}" href="{{ url_for('dashboard') }}">Base</a>
                 <a class="{% if request.endpoint in ['map_page', 'send_map_raid', 'send_map_scout', 'capture_spice_bloom', 'reinforce_spice_bloom', 'harvest_spice_bloom'] %}active{% endif %}" href="{{ url_for('map_page') }}">Map</a>
                 <a class="{% if request.endpoint in ['inbox', 'battle_report'] %}active{% endif %}" href="{{ url_for('inbox') }}">Inbox{% if unread_report_count %} <span class="nav-badge">{{ unread_report_count }}</span>{% endif %}</a>
                 <a class="{% if request.endpoint == 'leaderboard' %}active{% endif %}" href="{{ url_for('leaderboard') }}">Leaderboard</a>

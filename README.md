@@ -25,6 +25,7 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Build faction influence buildings: Sisterhood Chapel, Whisper Chamber, or Sayyadina Sanctuary
 - Train faction influence agents after unlocking Bene Gesserit Influence
 - Build Scout and Assault Ornithopters, Carryalls, and Spice Harvesters in the Flight Works
+- Render human troops in the Deathstill to recover Water; higher building levels improve recovery efficiency
 - Raid Small and Medium Spice Blooms with regular forces
 - Capture NPC- or player-defended Large Spice Blooms; surviving attackers become a persistent garrison that can receive reinforcements
 - Harvest captured Large Spice Blooms with Spice Harvesters transported by Carryalls
@@ -59,8 +60,6 @@ The SQLite database is created automatically as `game.db` on first run.
 
 ## Suggested Next Features
 
-- Timed construction queue
-- Deathstill unit sacrifice mechanic
 - Higher-tier shielded units and combat resolution
 - Spy missions, Reverend Mother loyalty reduction, and village capture
 - Recall and rebalance remote bloom garrisons

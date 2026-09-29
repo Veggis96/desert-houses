@@ -465,6 +465,25 @@ tbody tr:hover { background: #ffffff03; }
 .target-assessment.danger { border-left-color: var(--danger); }
 .target-assessment.danger strong { color: #efaa96; }
 .target-assessment.neutral { border-left-color: #75847a; }
+.deathstill-hero { border-bottom-color: #6f4337; }
+.deathstill-overview { display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: center; gap: 24px; border-left: 3px solid #9b5946; }
+.deathstill-art { display: grid; place-items: center; min-height: 150px; background: radial-gradient(ellipse, #a85a3c24, transparent 70%); }
+.deathstill-art img { width: 150px; height: 150px; object-fit: contain; filter: drop-shadow(0 10px 12px #0008) saturate(.82); }
+.deathstill-meter { height: 6px; margin-top: 16px; overflow: hidden; background: #ffffff0a; border-radius: 999px; }
+.deathstill-meter span { display: block; height: 100%; background: linear-gradient(90deg, #567b83, #91b8b8); }
+.deathstill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.deathstill-unit-card { display: grid; gap: 14px; padding: 16px; background: #151a17; border: 1px solid var(--line); border-top-color: #89513f; border-radius: 8px; }
+.deathstill-unit-card.empty { opacity: .62; }
+.deathstill-unit-card h3, .deathstill-unit-card p { margin: 0; }
+.deathstill-unit-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; }
+.deathstill-unit-card dl div { padding: 9px; background: #ffffff04; border-radius: 5px; }
+.deathstill-unit-card dt { color: var(--muted); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+.deathstill-unit-card dd { margin: 2px 0 0; color: #a7c9ca; font-size: 13px; }
+.deathstill-unit-card form { display: grid; gap: 6px; }
+.deathstill-unit-card label { color: var(--muted); font-size: 10px; }
+.deathstill-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.deathstill-action input { width: 100%; }
+@media(max-width:760px) { .deathstill-overview { grid-template-columns: 1fr; } .deathstill-art { min-height: 110px; } }
 .yield-estimate { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 10px 0; padding: 10px 12px; background: #d7b5780a; border: 1px solid #d7b57830; border-radius: 5px; font-size: 12px; }
 .yield-estimate strong { color: var(--accent); font-size: 14px; }
 .yield-estimate small { grid-column: 1 / -1; color: var(--muted); }
