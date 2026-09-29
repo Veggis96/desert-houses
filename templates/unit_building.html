@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="base-layout">
+{% include "base_nav.html" %}
+<div class="base-main">
+<section class="hero">
+    <div>
+        <p class="eyebrow">{{ eyebrow }}</p>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+    </div>
+    <a class="button-link" href="{{ url_for('dashboard') }}">Back to Base</a>
+</section>
+
+<section class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Sequential Queue</p>
+            <h2>Training Queue {{ unit_queue|length }}/{{ unit_queue_limit }}</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for item in unit_queue %}
+            <article class="building-card unit-training-item" {% if item.finish_at %}data-finish-at="{{ item.finish_at }}"{% endif %}>
+                <div>
+                    <h3>{{ item.amount }} {{ unit_display_name(item.unit_key, user.faction_slug) }}</h3>
+                    <p class="muted unit-training-timer">{{ queue_status(item) }}</p>
+                </div>
+                <div class="progress-track" aria-label="Training progress">
+                    <span class="progress-fill" data-started-at="{{ item.started_at or '' }}" data-finish-at="{{ item.finish_at or '' }}"></span>
+                </div>
+            </article>
+        {% else %}
+            <p class="muted">No units training.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Available Units</p>
+            <h2>Train Units</h2>
+        </div>
+    </div>
+    <div class="building-grid">
+        {% for unit in unit_cards %}
+            <article class="building-card">
+                <div>
+                    <h3>{{ unit.name }}</h3>
+                    <p>Owned: {{ unit.owned }}</p>
+                    {% if unit.role %}<p class="eyebrow">{{ unit.role }}</p>{% endif %}
+                    {% if unit.ability_summary %}<p class="muted">{{ unit.ability_summary }}</p>{% endif %}
+                    <p class="muted">Unlocks at {{ unit.unlock_building }} level {{ unit.unlock_level }}{% if unit.unlock_research %} and {{ unit.unlock_research }}{% endif %}.</p>
+                </div>
+                {% if unit.abilities %}
+                    <div class="mission-list">
+                        {% for ability in unit.abilities %}
+                            <span>{{ ability }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="cost-list">
+                    <span>Health {{ unit.health }}</span>
+                    <span>Damage {{ unit.damage }}</span>
+                    <span>Armor {{ unit.armor }}</span>
+                    <span>Shield {{ unit.shield }}</span>
+                    <span>Speed {{ unit.speed }}</span>
+                    <span>Carry {{ unit.carry }}</span>
+                    <span>Water upkeep {{ unit.water_upkeep }}/h</span>
+                </div>
+                <div class="cost-list">
+                    <span>Iron {{ unit.cost.iron }}</span>
+                    <span>Wood {{ unit.cost.wood }}</span>
+                    <span>Water {{ unit.cost.water }}</span>
+                    {% if unit.cost.spice > 0 %}<span>Spice Sand {{ unit.cost.spice }}</span>{% endif %}
+                    {% if unit.cost.get('melange', 0) > 0 %}<span>Melange {{ unit.cost.melange }}</span>{% endif %}
+                    <span>{{ unit.training_time }}s each</span>
+                </div>
+                {% if unit.queue_full or unit.missing_resources or not unit.unlocked %}
+                    <div class="requirement-list">
+                        {% if not unit.unlocked %}<span>Unit locked</span>{% endif %}
+                        {% if unit.queue_full %}<span>Training queue full</span>{% endif %}
+                        {% for resource, amount in unit.missing_resources.items() %}<span>Need {{ amount }} more {{ resource_display_name(resource) }}</span>{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('train_unit', unit_key=unit.key) }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <input name="amount" type="number" value="1" min="1" max="999" {% if not unit.unlocked %}disabled{% endif %}>
+                    <button type="submit" {% if not unit.can_train %}disabled{% endif %}>Train</button>
+                </form>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+</div>
+</div>
+
+<script>
+    (() => {
+        const timers = Array.from(document.querySelectorAll(".unit-training-item[data-finish-at]"));
+        if (!timers.length) return;
+        let reloadScheduled = false;
+        function formatRemaining(totalSeconds) {
+            const seconds = Math.max(totalSeconds, 0);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes <= 0) return `${remainder}s remaining`;
+            return `${minutes}m ${String(remainder).padStart(2, "0")}s remaining`;
+        }
+        function tick() {
+            const now = Date.now();
+            timers.forEach((item, index) => {
+                const label = item.querySelector(".unit-training-timer");
+                const finishAt = Date.parse(item.dataset.finishAt);
+                if (!label || Number.isNaN(finishAt)) return;
+                const remaining = Math.ceil((finishAt - now) / 1000);
+                if (remaining > 0) {
+                    label.textContent = formatRemaining(remaining);
+                    return;
+                }
+                label.textContent = index === 0 ? "Completing..." : "Waiting...";
+                if (index === 0 && !reloadScheduled) {
+                    reloadScheduled = true;
+                    window.setTimeout(() => window.location.reload(), 1200);
+                }
+            });
+        }
+        tick();
+        window.setInterval(tick, 1000);
+    })();
+</script>
+{% endblock %}

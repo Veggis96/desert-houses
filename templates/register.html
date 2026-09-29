@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<section class="panel auth-panel">
+    <p class="eyebrow">A new beginning</p>
+    <h1>Choose Your House</h1>
+    <p class="auth-intro muted">Every great house starts with a single settlement.</p>
+    <form method="post">
+        <label for="username">Username</label>
+        <input id="username" name="username" required autocomplete="username">
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="new-password">
+
+        <div class="faction-list">
+            {% for faction in factions %}
+                <label class="faction-card">
+                    <input type="radio" name="faction" value="{{ faction.slug }}" required {% if loop.first %}checked{% endif %}>
+                    <strong>{{ faction.name }}</strong>
+                    <span>{{ faction.description }}</span>
+                </label>
+            {% endfor %}
+        </div>
+
+        <button type="submit">Found Base</button>
+    </form>
+    <p class="muted">Already have a house? <a href="{{ url_for('login') }}">Log in</a>.</p>
+</section>
+{% endblock %}

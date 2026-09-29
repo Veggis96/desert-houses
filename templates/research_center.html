@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Research Center{% endblock %}
+
+{% block content %}
+<div class="base-layout">
+{% include "base_nav.html" %}
+<div class="base-main">
+<section class="hero">
+    <div>
+        <p class="eyebrow">Research</p>
+        <h1>Research Center</h1>
+        <p>Improve construction, training, unit stats, shields, and influence operations.</p>
+    </div>
+    <a class="button-link" href="{{ url_for('dashboard') }}">Back to Base</a>
+</section>
+
+<section class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Sequential Queue</p>
+            <h2>Research Queue {{ research_queue|length }}/{{ research_queue_limit }}</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for item in research_queue %}
+            <article class="building-card research-item" {% if item.finish_at %}data-finish-at="{{ item.finish_at }}"{% endif %}>
+                <div>
+                    <h3>{{ research_defs[item.research_key].name }} to level {{ item.target_level }}</h3>
+                    <p class="muted research-timer">{{ queue_status(item) }}</p>
+                </div>
+                <div class="progress-track" aria-label="Research progress">
+                    <span class="progress-fill" data-started-at="{{ item.started_at or '' }}" data-finish-at="{{ item.finish_at or '' }}"></span>
+                </div>
+            </article>
+        {% else %}
+            <p class="muted">No active research.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Available Research</p>
+            <h2>Development Upgrades</h2>
+        </div>
+    </div>
+    <div class="building-grid">
+        {% for research in research_cards %}
+            <article class="building-card">
+                <div>
+                    <h3>{{ research.name }}</h3>
+                    <p>Level {{ research.level }}/{{ research.max_level }}</p>
+                    <p class="muted">{{ research.description }}</p>
+                    {% if research.effect_before %}
+                        <div class="research-effect-preview">
+                            <span>Throughput <strong>+{{ research.effect_before.throughput_bonus }}% → +{{ research.effect_after.throughput_bonus }}%</strong></span>
+                            <span>Sand per Melange <strong>{{ research.effect_before.conversion_ratio }} → {{ research.effect_after.conversion_ratio }}</strong></span>
+                        </div>
+                    {% endif %}
+                    {% if research.requirement_text %}<p class="muted">Requires {{ research.requirement_text }}.</p>{% endif %}
+                    {% if research.queued_count > 0 %}<p class="muted">Queued. Next target: level {{ research.target_level }}.</p>{% endif %}
+                    {% if research.maxed %}<p class="muted">Maximum level reached.</p>{% endif %}
+                </div>
+                <div class="cost-list">
+                    <span>Iron {{ research.cost.iron }}</span>
+                    <span>Wood {{ research.cost.wood }}</span>
+                    <span>Water {{ research.cost.water }}</span>
+                    {% if research.cost.spice > 0 %}<span>Spice Sand {{ research.cost.spice }}</span>{% endif %}
+                    {% if research.cost.get('melange', 0) > 0 %}<span>Melange {{ research.cost.melange }}</span>{% endif %}
+                    <span>{{ research.duration }}s</span>
+                </div>
+                {% if research.queue_full or research.missing_resources %}
+                    <div class="requirement-list">
+                        {% if research.queue_full %}<span>Research queue full</span>{% endif %}
+                        {% for resource, amount in research.missing_resources.items() %}<span>Need {{ amount }} more {{ resource_display_name(resource) }}</span>{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('start_research', research_key=research.key) }}">
+                    <input type="hidden" name="next" value="{{ url_for('research_center_page') }}">
+                    <button type="submit" {% if not research.can_research %}disabled{% endif %}>Research</button>
+                </form>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+</div>
+</div>
+
+<script>
+    (() => {
+        const timers = Array.from(document.querySelectorAll(".research-item[data-finish-at]"));
+        if (!timers.length) return;
+        let reloadScheduled = false;
+        function formatRemaining(totalSeconds) {
+            const seconds = Math.max(totalSeconds, 0);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes <= 0) return `${remainder}s remaining`;
+            return `${minutes}m ${String(remainder).padStart(2, "0")}s remaining`;
+        }
+        function tick() {
+            const now = Date.now();
+            timers.forEach((item, index) => {
+                const label = item.querySelector(".research-timer");
+                const finishAt = Date.parse(item.dataset.finishAt);
+                if (!label || Number.isNaN(finishAt)) return;
+                const remaining = Math.ceil((finishAt - now) / 1000);
+                if (remaining > 0) {
+                    label.textContent = formatRemaining(remaining);
+                    return;
+                }
+                label.textContent = index === 0 ? "Completing..." : "Waiting...";
+                if (index === 0 && !reloadScheduled) {
+                    reloadScheduled = true;
+                    window.setTimeout(() => window.location.reload(), 1200);
+                }
+            });
+        }
+        tick();
+        window.setInterval(tick, 1000);
+    })();
+</script>
+{% endblock %}

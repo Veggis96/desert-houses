@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Resource Fields{% endblock %}
+
+{% block content %}
+{% set field_image_versions = {'dew_field': 'v3', 'windtrap': 'v3', 'large_windtrap': 'v3'} %}
+{% set field_scene = 'images/fields/production-basin-v2.png' if field_background_image in ['images/field_level_01_sparse.png', 'images/field_level_01_sparse_open_spots.png'] else field_background_image %}
+<div class="base-layout">
+{% include "base_nav.html" %}
+<div class="base-main">
+<section class="hero">
+    <div>
+        <p class="eyebrow">{{ user.faction_name }}</p>
+        <h1>Resource Fields</h1>
+        <p>Develop the desert around {{ village.name }} to fuel construction, research, and armies.</p>
+    </div>
+    <div class="stat-stack">
+        <div class="capacity">Storage: {{ capacity|round|int }}</div>
+        <div class="capacity">Water use: {{ water_consumption|round(1) }}/hour</div>
+    </div>
+</section>
+
+<section class="resource-grid">
+    {% for resource in ['iron', 'wood', 'water', 'spice', 'melange'] %}
+        <article class="resource-card {{ resource }}">
+            <span>{{ resource_display_name(resource) }}</span>
+            <strong>{{ village[resource]|round(2 if resource == 'melange' else 1) }}</strong>
+            <small>{{ ('%+.2f' if resource == 'melange' else '%+.1f')|format(rates[resource]) }}/hour</small>
+            <small class="resource-trend {{ 'negative' if rates[resource] < 0 else 'positive' if rates[resource] > 0 else 'stable' }}">{{ resource_trend_label(village[resource], rates[resource], capacity) }}</small>
+            <div class="resource-meter" aria-label="{{ resource_display_name(resource) }} storage {{ ((village[resource] / capacity) * 100)|round|int }}%">
+                <span style="width: {{ [((village[resource] / capacity) * 100), 100]|min }}%"></span>
+            </div>
+        </article>
+    {% endfor %}
+</section>
+
+{% if rates.water < 0 %}
+    <section class="warning">
+        Water is running at a deficit. Upgrade Dew Fields or Windtraps before expanding too aggressively.
+    </section>
+{% endif %}
+
+<section class="panel spaced-panel compact-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Sequential Queue</p>
+            <h2>Construction Queue {{ construction_queue|length }}/{{ construction_queue_limit }}</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for item in construction_queue %}
+            <article class="building-card construction-item" {% if item.finish_at %}data-finish-at="{{ item.finish_at }}"{% endif %}>
+                <div>
+                    <h3>{{ building_defs[item.building_key]['name'] }} to level {{ item.target_level }}</h3>
+                    <p class="muted construction-timer">{{ queue_status(item) }}</p>
+                </div>
+                <div class="progress-track" aria-label="Construction progress">
+                    <span class="progress-fill" data-started-at="{{ item.started_at or '' }}" data-finish-at="{{ item.finish_at or '' }}"></span>
+                </div>
+                <span class="queue-state {{ 'active' if item.started_at else 'waiting' }}">{{ 'Active' if item.started_at else 'Waiting' }}</span>
+            </article>
+        {% else %}
+            <p class="muted compact-copy">No active construction. Queue field upgrades from the map below.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel village-panel fields-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Outer Basin</p>
+            <h2>Production Fields</h2>
+        </div>
+        <p class="muted">Click a field to inspect and upgrade it.</p>
+    </div>
+
+    <div class="village-view fields-view">
+        <div class="fields-map scene-art-map fields-scene-map" style="--scene-image: url('{{ url_for('static', filename=field_scene) }}');" aria-label="Resource fields">
+        {% for field in fields %}
+            <button class="field-spot {{ field.key }} {% if field.level == 0 %}foundation{% endif %} {% if loop.first %}active{% endif %}" type="button" data-field-key="{{ field.key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+                <span class="building-art asset-art" aria-hidden="true">
+                    <img src="{{ url_for('static', filename='images/fields/' ~ field.key ~ '-' ~ field_image_versions.get(field.key, 'v2') ~ '.png') }}" alt="">
+                </span>
+                <span class="building-label">{{ field.name }}</span>
+                <span class="level-badge">{% if field.level == 0 %}Site{% else %}Lv {{ field.level }}{% endif %}</span>
+                {% with construction_key=field.key %}{% include "construction_marker.html" %}{% endwith %}
+            </button>
+        {% endfor %}
+        </div>
+
+        <div class="village-detail-stack">
+        {% for field in fields %}
+            <article class="building-detail {% if loop.first %}active{% endif %}" data-field-detail="{{ field.key }}">
+                <div class="detail-art resource-detail-art">
+                    <img src="{{ url_for('static', filename='images/fields/' ~ field.key ~ '-' ~ field_image_versions.get(field.key, 'v2') ~ '.png') }}" alt="{{ field.name }}" width="180" height="180">
+                </div>
+                <div>
+                    <h3>{{ field.name }}</h3>
+                    <p>Level {{ field.level }}</p>
+                    <p class="muted">Produces {{ field.production|round(1) }} {{ resource_display_name(field.resource) }}/hour.</p>
+                    {% if field.prerequisite_text %}<p class="muted">Requires {{ field.prerequisite_text }}.</p>{% endif %}
+                    {% if field.research_prerequisite_text %}<p class="muted">Requires {{ field.research_prerequisite_text }}.</p>{% endif %}
+                    {% if field.queued_count > 0 %}<p class="muted">Queued {{ field.queued_count }} time{% if field.queued_count != 1 %}s{% endif %}. Next target: level {{ field.effective_level + 1 }}.</p>{% endif %}
+                </div>
+                {% with upgrade_card=field %}{% include 'upgrade_preview.html' %}{% endwith %}
+                <div class="cost-list">
+                    <span>Iron {{ field.cost.iron }}</span>
+                    <span>Wood {{ field.cost.wood }}</span>
+                    <span>Water {{ field.cost.water }}</span>
+                    {% if field.cost.spice > 0 %}<span>Spice Sand {{ field.cost.spice }}</span>{% endif %}
+                    {% if field.cost.get('melange', 0) > 0 %}<span>Melange {{ field.cost.melange }}</span>{% endif %}
+                </div>
+                {% if field.queue_full or field.missing_resources %}
+                    <div class="requirement-list">
+                        {% if field.queue_full %}<span>Construction queue full</span>{% endif %}
+                        {% for resource, amount in field.missing_resources.items() %}<span>Need {{ amount }} more {{ resource_display_name(resource) }}</span>{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('upgrade', building_key=field.key) }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" {% if not field.can_upgrade %}disabled{% endif %}>{% if field.level == 0 %}Construct{% else %}Upgrade{% endif %}</button>
+                </form>
+            </article>
+        {% endfor %}
+        </div>
+    </div>
+</section>
+</div>
+</div>
+
+<script>
+    (() => {
+        const spots = Array.from(document.querySelectorAll(".field-spot[data-field-key]"));
+        const details = Array.from(document.querySelectorAll(".building-detail[data-field-detail]"));
+        if (!spots.length || !details.length) return;
+        function selectField(key) {
+            spots.forEach((spot) => {
+                const active = spot.dataset.fieldKey === key;
+                spot.classList.toggle("active", active);
+                spot.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+            details.forEach((detail) => {
+                detail.classList.toggle("active", detail.dataset.fieldDetail === key);
+            });
+        }
+        spots.forEach((spot) => spot.addEventListener("click", () => selectField(spot.dataset.fieldKey)));
+    })();
+
+    (() => {
+        const timers = Array.from(document.querySelectorAll(".construction-item[data-finish-at]"));
+        if (!timers.length) return;
+        let reloadScheduled = false;
+        function formatRemaining(totalSeconds) {
+            const seconds = Math.max(totalSeconds, 0);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes <= 0) return `${remainder}s remaining`;
+            return `${minutes}m ${String(remainder).padStart(2, "0")}s remaining`;
+        }
+        function tick() {
+            const now = Date.now();
+            timers.forEach((item, index) => {
+                const label = item.querySelector(".construction-timer");
+                const finishAt = Date.parse(item.dataset.finishAt);
+                if (!label || Number.isNaN(finishAt)) return;
+                const remaining = Math.ceil((finishAt - now) / 1000);
+                if (remaining > 0) {
+                    label.textContent = formatRemaining(remaining);
+                    return;
+                }
+                label.textContent = index === 0 ? "Completing..." : "Waiting...";
+                if (index === 0 && !reloadScheduled) {
+                    reloadScheduled = true;
+                    window.setTimeout(() => window.location.reload(), 1200);
+                }
+            });
+        }
+        tick();
+        window.setInterval(tick, 1000);
+    })();
+</script>
+{% endblock %}

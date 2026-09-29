@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Alliances{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Embassy Level {{ buildings.embassy }}</p>
+        <h1>Alliances</h1>
+        <p>Create or apply to alliances once your Embassy reaches level {{ embassy_alliance_level }}.</p>
+    </div>
+    {% if membership %}
+        <div class="capacity">[{{ membership.alliance_tag }}] {{ membership.role|capitalize }}</div>
+    {% endif %}
+</section>
+
+{% if not has_embassy %}
+    <section class="warning">
+        Your Embassy must reach level {{ embassy_alliance_level }} before you can create an alliance or apply to join one.
+    </section>
+{% endif %}
+
+{% if membership and applications %}
+    <section class="panel spaced-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Officer Duties</p>
+                <h2>Pending Applications</h2>
+            </div>
+        </div>
+        <div class="list-grid">
+            {% for application in applications %}
+                <article class="building-card">
+                    <div>
+                        <h3>{{ application.username }}</h3>
+                        <p class="muted">{{ application.message or 'No message included.' }}</p>
+                    </div>
+                    <div class="button-row">
+                        <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='approve') }}">
+                            <button type="submit">Approve</button>
+                        </form>
+                        <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='reject') }}">
+                            <button class="secondary" type="submit">Reject</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
+{% if membership %}
+    <section class="panel spaced-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Member Area</p>
+                <h2>[{{ membership.alliance_tag }}] {{ membership.alliance_name }}</h2>
+            </div>
+            <a class="button-link" href="{{ url_for('alliance_home') }}">Open Alliance Tab</a>
+        </div>
+        <p class="muted">Use the alliance tab for member topics, chat, applications, and management.</p>
+    </section>
+{% endif %}
+
+{% if has_embassy and not membership %}
+    <section class="panel spaced-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Founding</p>
+                <h2>Create Alliance</h2>
+            </div>
+        </div>
+        <form method="post" action="{{ url_for('create_alliance') }}" class="wide-form" autocomplete="off">
+            <label for="name">Alliance Name</label>
+            <input id="name" name="alliance_name" required maxlength="80" autocomplete="off" autocapitalize="words" spellcheck="false">
+
+            <label for="tag">Alliance Tag</label>
+            <input id="tag" name="alliance_tag" required maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false">
+
+            <label for="description">Description</label>
+            <input id="description" name="alliance_description" maxlength="240" autocomplete="off" spellcheck="false">
+
+            <button type="submit">Create Alliance</button>
+        </form>
+    </section>
+{% endif %}
+
+{% if active_application %}
+    <section class="warning">
+        Pending application to [{{ active_application.alliance_tag }}] {{ active_application.alliance_name }}. You can only have one active application.
+    </section>
+{% endif %}
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Known Powers</p>
+            <h2>Alliance List</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for alliance in alliances %}
+            <article class="building-card">
+                <div>
+                    <h3>[{{ alliance.tag }}] {{ alliance.name }}</h3>
+                    <p class="muted">{{ alliance.description or 'No public description.' }}</p>
+                    <p>Members: {{ alliance.member_count }} | Points: {{ alliance.total_points }}</p>
+                </div>
+                {% if has_embassy and not membership and not active_application %}
+                    <form method="post" action="{{ url_for('apply_to_alliance', alliance_id=alliance.id) }}">
+                        <label for="message-{{ alliance.id }}">Application Message</label>
+                        <input id="message-{{ alliance.id }}" name="message" maxlength="240" placeholder="Optional message">
+                        <button type="submit">Apply</button>
+                    </form>
+                {% endif %}
+            </article>
+        {% else %}
+            <p class="muted">No alliances have been created yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

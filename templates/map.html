@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+
+{% block title %}Map{% endblock %}
+
+{% block content %}
+{% set terrain_previews = {'spice_bloom_small': 'spice', 'spice_bloom_medium': 'spice', 'spice_bloom_large': 'spice', 'water_oasis': 'water', 'iron_outcrop': 'iron', 'scrap_field': 'wood', 'npc_camp': 'camp'} %}
+<section class="hero compact-panel">
+    <div>
+        <p class="eyebrow">Deep Desert</p>
+        <h1>31x31 Map</h1>
+        <p>Your base is at {{ village.map_x }}, {{ village.map_y }}. Raid small and medium blooms, or capture a Large Bloom for Harvester operations.</p>
+    </div>
+    <div class="stat-stack">
+        <div class="capacity">Range: {{ -map_radius }} to {{ map_radius }}</div>
+        <div class="capacity">Active: {{ movements|length }}</div>
+    </div>
+</section>
+
+<section class="panel compact-panel map-jump-panel">
+    <form method="get" action="{{ url_for('map_page') }}" class="map-jump-form">
+        <label>
+            X
+            <input name="x" type="number" min="{{ -map_radius }}" max="{{ map_radius }}" value="{{ selected_tile.x }}">
+        </label>
+        <label>
+            Y
+            <input name="y" type="number" min="{{ -map_radius }}" max="{{ map_radius }}" value="{{ selected_tile.y }}">
+        </label>
+        <button class="secondary compact" type="submit">Jump To Coordinates</button>
+    </form>
+</section>
+
+<div class="map-layout">
+    <section class="panel map-panel">
+        <div class="map-header-strip">
+            <span>Arrakis Sector Grid</span>
+            <span>N</span>
+        </div>
+        <div class="map-legend" aria-label="Map legend">
+            <span><i class="legend-tile desert"></i>Desert</span>
+            <span><i class="legend-tile player_base"></i>Base</span>
+            <span><i class="legend-tile npc_camp"></i>Camp</span>
+            <span><i class="legend-tile spice_bloom_small"></i>Small Bloom</span>
+            <span><i class="legend-tile spice_bloom_medium"></i>Medium Bloom</span>
+            <span><i class="legend-tile spice_bloom_large"></i>Large Bloom</span>
+            <span><i class="legend-tile water_oasis"></i>Water</span>
+            <span><i class="legend-tile iron_outcrop"></i>Iron</span>
+            <span><i class="legend-tile scrap_field"></i>Wood</span>
+        </div>
+        <div class="map-filters" aria-label="Map filters">
+            <button class="compact active" type="button" data-map-filter="all">All</button>
+            <button class="compact" type="button" data-map-filter="spice">Spice Sand</button>
+            <button class="compact" type="button" data-map-filter="water">Water</button>
+            <button class="compact" type="button" data-map-filter="iron">Iron</button>
+            <button class="compact" type="button" data-map-filter="wood">Wood</button>
+            <button class="compact" type="button" data-map-filter="camp">Camps</button>
+            <button class="compact" type="button" data-map-filter="scouted">Scouted</button>
+            <button class="compact" type="button" data-map-filter="movement">Missions</button>
+            <button class="compact active" type="button" data-map-density>Clear view</button>
+        </div>
+        <div class="map-locate-controls"><a class="button-link secondary" href="{{ url_for('map_page', x=village.map_x, y=village.map_y, focus='selected') }}">To my base</a><button type="button" class="secondary compact" data-locate-selected>To selected field</button></div>
+        <div class="map-zoom-controls" aria-label="Map zoom">
+            <span>Zoom</span>
+            <button class="compact" type="button" data-map-zoom="compact">Compact</button>
+            <button class="compact active" type="button" data-map-zoom="normal">Normal</button>
+            <button class="compact" type="button" data-map-zoom="large">Large</button>
+        </div>
+        <div class="map-grid" aria-label="World map">
+            {% for row in tile_rows %}
+                {% for tile in row %}
+                    <a class="map-tile {{ tile.tile_type }} {% if tile.owner_faction_slug %}{{ tile.owner_faction_slug }}-base{% endif %} {% if tile.controller_faction_slug %}controlled {{ tile.controller_faction_slug }}-controlled{% endif %} {% if tile.id == selected_tile.id %}selected{% endif %} {% if tile.id in movement_targets %}has-movement{% endif %} {% if tile.id in scouted_tile_ids %}scouted{% endif %} {% if tile.id in bookmarked_tile_ids %}bookmarked{% endif %}" href="{{ url_for('map_page', tile_id=tile.id) }}" title="{{ tile_display_name(tile.tile_type) }} ({{ tile.x }}, {{ tile.y }}){% if tile.controller_name %} · Controlled by {{ tile.controller_name }}{% endif %}" data-preserve-scroll>
+                        <i class="map-terrain" aria-hidden="true"></i>
+                        <span>{{ tile_short_label(tile) }}</span>
+                    </a>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </section>
+
+    <aside class="panel map-detail">
+        {% if selected_tile.tile_type in terrain_previews %}
+        <div class="map-terrain-preview"><img src="{{ url_for('static', filename='images/map/' ~ terrain_previews[selected_tile.tile_type] ~ '-v2.png') }}" alt="{{ tile_display_name(selected_tile.tile_type) }}" width="180" height="180"></div>
+        {% endif %}
+        <p class="eyebrow">Selected Tile</p>
+        <h2>{{ tile_display_name(selected_tile.tile_type) }}</h2>
+        <p class="muted">Coordinates {{ selected_tile.x }}, {{ selected_tile.y }} | Distance {{ '%.1f'|format(distance) }} | {{ difficulty }}</p>
+        {% if recommendation %}
+        <section class="target-assessment {{ recommendation.tone }}" aria-label="Target assessment">
+            <strong>{{ recommendation.label }}</strong>
+            <span>{{ recommendation.text }}</span>
+        </section>
+        {% endif %}
+        <form method="post" action="{{ url_for('remove_tile_bookmark' if selected_tile.id in bookmarked_tile_ids else 'bookmark_tile', tile_id=selected_tile.id) }}" class="inline-form bookmark-form">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="secondary compact" type="submit">{{ 'Remove Bookmark' if selected_tile.id in bookmarked_tile_ids else 'Bookmark Target' }}</button>
+        </form>
+        {% if selected_tile.owner_name %}
+            <p>Owned by {{ selected_tile.owner_name }}.</p>
+        {% endif %}
+        {% if is_large_bloom %}
+            {% if selected_tile.controller_name %}
+                <div class="bloom-control-card {{ 'friendly' if controls_selected_bloom else 'hostile' }}"><span>Bloom control</span><strong>{{ selected_tile.controller_name }}</strong><small>{{ selected_tile.controller_village_name }}</small></div>
+            {% else %}
+                <div class="bloom-control-card neutral"><span>Bloom control</span><strong>NPC occupied</strong><small>Defeat the defenders to claim the deposit.</small></div>
+            {% endif %}
+            {% if has_tile_intel %}
+                <section class="worm-monitor {{ 'critical' if worm_attention >= 90 else 'warning' if worm_attention >= 60 else 'calm' }}" aria-label="Sandworm activity">
+                    <div><span>Worm Attention</span><strong>{{ worm_attention|round|int }}/100</strong></div>
+                    <meter min="0" max="100" low="45" high="75" optimum="0" value="{{ worm_attention }}">{{ worm_attention|round|int }}</meter>
+                    <small>
+                        {% if worm_cooldown_active %}Worm Territory active until {{ worm_cooldown_until[11:16] }}. Harvesting is temporarily blocked.
+                        {% elif worm_attention >= 90 %}A worm attack is imminent. Early extraction is strongly advised.
+                        {% elif worm_attention >= 60 %}Strong seismic activity. Further harvesting carries elevated risk.
+                        {% else %}The sand is currently stable. Attention falls while the bloom rests.{% endif %}
+                    </small>
+                </section>
+            {% endif %}
+        {% endif %}
+        {% if has_tile_intel %}
+            {% if defender_units %}
+                <p class="eyebrow">Defenders</p>
+                <div class="cost-list compact-copy">
+                    <span>{{ defender_summary.count }} units</span>
+                    <span>Total attack {{ defender_summary.attack }}</span>
+                    <span>Total defense {{ defender_summary.defense }}</span>
+                    <span>Total health {{ defender_summary.health }}</span>
+                </div>
+                <table class="compact-table">
+                    <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th></tr></thead>
+                    <tbody>
+                        {% for unit in defender_units %}
+                            <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="muted">No defenders observed.</p>
+            {% endif %}
+            {% if tile_intel %}<p class="muted">Scouted {{ tile_intel.scouted_at[:16].replace('T', ' ') }}.</p>{% endif %}
+            <div class="cost-list">
+                <span>Iron {{ intel_source.resource_iron|round|int }}</span>
+                <span>Wood {{ intel_source.resource_wood|round|int }}</span>
+                <span>Water {{ intel_source.resource_water|round|int }}</span>
+                <span>Spice Sand {{ intel_source.resource_spice|round|int }}</span>
+            </div>
+        {% else %}
+            <p class="muted">Potential: {{ tile_potential }}</p>
+            {% if expected_yield and expected_yield.maximum %}
+            <div class="yield-estimate"><span>Expected {{ expected_yield.label }}</span><strong>{{ expected_yield.minimum }}–{{ expected_yield.maximum }}</strong><small>Estimate before scouting</small></div>
+            {% endif %}
+            <div class="cost-list">
+                <span>Resources Unknown</span>
+                <span>Defenders Unknown</span>
+            </div>
+            <p class="muted compact-copy">Send scouts to reveal exact resources and defenders.</p>
+        {% endif %}
+        <div class="cost-list map-preview">
+            {% if raid_travel_seconds %}<span>Fastest raid {{ raid_travel_seconds }}s one-way</span>{% endif %}
+            {% if raid_travel_seconds %}<span>Round trip {{ raid_travel_seconds * 2 }}s</span>{% endif %}
+            {% if scout_travel_seconds %}<span>Fastest scout {{ scout_travel_seconds }}s one-way</span>{% endif %}
+            {% if total_carry > 0 %}<span>Max army carry {{ total_carry }}</span>{% endif %}
+            {% if visible_loot > 0 and total_carry > 0 %}<span>Army can carry {{ [visible_loot, total_carry]|min }} / {{ visible_loot }}</span>{% endif %}
+        </div>
+
+        {% if can_capture %}
+            <form method="post" action="{{ url_for('capture_spice_bloom', tile_id=selected_tile.id) }}" class="wide-form operation-form capture-form">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <p class="eyebrow">Capture Large Bloom</p>
+                <p class="muted compact-copy">Defeat its current defenders. Surviving units remain here as your garrison.</p>
+                {% for unit in unit_cards %}
+                    <label for="capture-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | attack {{ unit.damage }} | speed {{ unit.speed }}</label>
+                    <input id="capture-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" value="0" min="0" max="{{ unit.amount }}">
+                {% endfor %}
+                <button type="submit">Dispatch Capture Force</button>
+            </form>
+        {% elif is_large_bloom and not controls_selected_bloom %}
+            <p class="muted">Train combat troops or Assault Ornithopters to capture this bloom.</p>
+        {% endif %}
+
+        {% if can_reinforce %}
+            <form method="post" action="{{ url_for('reinforce_spice_bloom', tile_id=selected_tile.id) }}" class="wide-form operation-form">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <p class="eyebrow">Reinforce Garrison</p>
+                {% for unit in unit_cards %}
+                    <label for="reinforce-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | speed {{ unit.speed }}</label>
+                    <input id="reinforce-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" value="0" min="0" max="{{ unit.amount }}">
+                {% endfor %}
+                <button class="secondary" type="submit">Send Reinforcements</button>
+            </form>
+        {% endif %}
+
+        {% if can_harvest %}
+            <form method="post" action="{{ url_for('harvest_spice_bloom', tile_id=selected_tile.id) }}" class="wide-form operation-form harvest-form">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <p class="eyebrow">Harvest Spice Sand</p>
+                <p class="muted compact-copy">Choose the extraction policy before departure. The Carryall evacuates automatically; no live monitoring is required.</p>
+                <fieldset class="harvest-policy-grid">
+                    <legend>Automatic extraction policy</legend>
+                    {% for key, policy in harvest_policies.items() %}
+                    <label class="harvest-policy-card {{ key }}">
+                        <input type="radio" name="harvest_policy" value="{{ key }}" {{ 'checked' if key == 'balanced' else '' }}>
+                        <span><strong>{{ policy.name }}</strong><small>{{ policy.description }}</small></span>
+                        <em>{{ policy.yield_per_harvester }} sand / Harvester · {{ policy.risk_label }} risk</em>
+                    </label>
+                    {% endfor %}
+                </fieldset>
+                <label for="harvesters">Spice Harvesters owned {{ harvester_count }}</label>
+                <input id="harvesters" name="unit_spice_harvester" type="number" value="1" min="0" max="{{ harvester_count }}">
+                <label for="carryalls">Carryalls owned {{ carryall_count }}</label>
+                <input id="carryalls" name="unit_carryall" type="number" value="1" min="0" max="{{ carryall_count }}">
+                <button type="submit">Begin Harvest Operation</button>
+            </form>
+        {% elif is_large_bloom and controls_selected_bloom and worm_cooldown_active %}
+            <p class="muted">A recent sandworm attack has turned this into temporary Worm Territory. The operation can resume after {{ worm_cooldown_until[11:16] }}.</p>
+        {% elif is_large_bloom and controls_selected_bloom %}
+            <p class="muted">Build both a Spice Harvester and Carryall in the Flight Works to harvest this deposit.</p>
+        {% endif %}
+
+        {% if can_send %}
+            <form method="post" action="{{ url_for('send_map_raid', tile_id=selected_tile.id) }}" class="wide-form raid-form" data-defender-defense="{{ defender_summary.defense if has_tile_intel else 0 }}" data-defender-attack="{{ defender_summary.attack if has_tile_intel else 0 }}" data-visible-loot="{{ visible_loot|round|int }}" data-distance="{{ distance }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <p class="eyebrow">Send Raid</p>
+                {% for unit in unit_cards %}
+                    <label for="unit-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | dmg {{ unit.damage }} | durability {{ unit.durability }} | carry {{ unit.carry }}</label>
+                    <input id="unit-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" value="0" min="0" max="{{ unit.amount }}" data-raid-unit data-damage="{{ unit.damage }}" data-durability="{{ unit.durability }}" data-carry="{{ unit.carry }}" data-speed="{{ unit.speed }}">
+                {% endfor %}
+                <div class="raid-estimate" aria-live="polite">
+                    <span>Selected attack 0</span>
+                    <span>Selected durability 0</span>
+                    <span>Selected carry 0</span>
+                    {% if has_tile_intel %}<span>Visible loot {{ visible_loot|round|int }}</span>{% endif %}
+                    {% if has_tile_intel %}<span>Recommended attack {{ defender_summary.defense }}</span>{% else %}<span>Scout first for defense estimate</span>{% endif %}
+                </div>
+                <div class="raid-presets" aria-label="Raid presets">
+                    <button class="secondary compact" type="button" data-raid-preset="clear">Clear</button>
+                    {% if has_tile_intel %}
+                        <button class="secondary compact" type="button" data-raid-preset="safe">Recommended Force</button>
+                        <button class="secondary compact" type="button" data-raid-preset="carry">Max Carry</button>
+                    {% endif %}
+                </div>
+                <button type="submit">Dispatch Raid</button>
+            </form>
+        {% elif selected_tile.village_id %}
+            <p class="muted">Village attacks are not enabled yet.</p>
+        {% elif not is_large_bloom %}
+            <p class="muted">Train military units in the Barracks to send raids.</p>
+        {% endif %}
+
+        {% if can_scout %}
+            <form method="post" action="{{ url_for('send_map_scout', tile_id=selected_tile.id) }}" class="wide-form raid-form">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <p class="eyebrow">Send Scouts</p>
+                {% for unit in scout_cards %}
+                    <label for="scout-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | speed {{ unit.speed }} | scouts resources and defenders</label>
+                    <input id="scout-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" value="0" min="0" max="{{ unit.amount }}">
+                {% endfor %}
+                <button class="secondary" type="submit">Dispatch Scouts</button>
+            </form>
+        {% elif not selected_tile.village_id %}
+            <p class="muted">Train influence units to scout tile resources and defenders.</p>
+        {% endif %}
+    </aside>
+</div>
+
+<section class="panel spaced-panel compact-panel recent-intel-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Scout Network</p>
+            <h2>Recently Scouted</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for intel in recent_intel %}
+            <a class="intel-card" href="{{ url_for('map_page', tile_id=intel.tile_id) }}">
+                <span>{{ tile_display_name(intel.tile_type) }} ({{ intel.x }}, {{ intel.y }})</span>
+                <small>{{ intel.scouted_at[:16].replace('T', ' ') }}</small>
+            </a>
+        {% else %}
+            <p class="muted compact-copy">No scouted tiles yet. Train influence units and send scouts from a tile detail panel.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel spaced-panel compact-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Movements</p>
+            <h2>Active Missions</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for movement in movements %}
+            <article class="building-card movement-item" {% if movement.status == 'outbound' %}data-finish-at="{{ movement.arrive_at }}"{% elif movement.return_at %}data-finish-at="{{ movement.return_at }}"{% endif %}>
+                <div>
+                    <h3>{% if movement.status == 'harvesting' %}Harvesting {{ tile_display_name(movement.tile_type) }}{% else %}{{ movement.mission_type|capitalize }} {{ movement.status }} to {{ tile_display_name(movement.tile_type) }}{% endif %} ({{ movement.target_x }}, {{ movement.target_y }})</h3>
+                    <p class="muted movement-timer">{{ queue_status({'started_at': movement.started_at, 'finish_at': movement.arrive_at if movement.status == 'outbound' else movement.return_at}) }}</p>
+                    {% if movement.report %}<p class="muted">{{ movement.report }}</p>{% endif %}
+                </div>
+                <div class="progress-track" aria-label="Mission progress">
+                    <span class="progress-fill" data-started-at="{{ movement.started_at }}" data-finish-at="{{ movement.arrive_at if movement.status == 'outbound' else movement.return_at or '' }}"></span>
+                </div>
+                <span class="mission-state {{ movement.status }}">{{ movement.status|capitalize }}</span>
+                <div class="cost-list">
+                    <span>Loot Iron {{ movement.loot_iron|round|int }}</span>
+                    <span>Wood {{ movement.loot_wood|round|int }}</span>
+                    <span>Water {{ movement.loot_water|round|int }}</span>
+                    <span>Spice Sand {{ movement.loot_spice|round|int }}</span>
+                </div>
+            </article>
+        {% else %}
+            <p class="muted compact-copy">No active troop movements.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<script>
+    (() => {
+        const timers = Array.from(document.querySelectorAll(".movement-item[data-finish-at]"));
+        if (!timers.length) return;
+        let reloadScheduled = false;
+        function formatRemaining(totalSeconds) {
+            const seconds = Math.max(totalSeconds, 0);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes <= 0) return `${remainder}s remaining`;
+            return `${minutes}m ${String(remainder).padStart(2, "0")}s remaining`;
+        }
+        function tick() {
+            const now = Date.now();
+            timers.forEach((item) => {
+                const label = item.querySelector(".movement-timer");
+                const finishAt = Date.parse(item.dataset.finishAt);
+                if (!label || Number.isNaN(finishAt)) return;
+                const remaining = Math.ceil((finishAt - now) / 1000);
+                if (remaining > 0) {
+                    label.textContent = formatRemaining(remaining);
+                    return;
+                }
+                label.textContent = "Resolving...";
+                if (!reloadScheduled) {
+                    reloadScheduled = true;
+                    window.setTimeout(() => window.location.reload(), 1200);
+                }
+            });
+        }
+        tick();
+        window.setInterval(tick, 1000);
+    })();
+
+    (() => {
+        const form = document.querySelector(".raid-form[data-defender-defense]");
+        if (!form) return;
+        const inputs = Array.from(form.querySelectorAll("[data-raid-unit]"));
+        const estimate = form.querySelector(".raid-estimate");
+        const presetButtons = Array.from(form.querySelectorAll("[data-raid-preset]"));
+        if (!inputs.length || !estimate) return;
+        const defenderDefense = Number(form.dataset.defenderDefense || 0);
+        const defenderAttack = Number(form.dataset.defenderAttack || 0);
+        const visibleLoot = Number(form.dataset.visibleLoot || 0);
+        const targetDistance = Number(form.dataset.distance || 0);
+
+        function updateEstimate() {
+            let attack = 0;
+            let durability = 0;
+            let carry = 0;
+            let slowestSpeed = Infinity;
+            let selectedUnits = 0;
+            inputs.forEach((input) => {
+                const amount = Math.max(Number(input.value || 0), 0);
+                selectedUnits += amount;
+                attack += amount * Number(input.dataset.damage || 0);
+                durability += amount * Number(input.dataset.durability || 0);
+                carry += amount * Number(input.dataset.carry || 0);
+                if (amount > 0) slowestSpeed = Math.min(slowestSpeed, Number(input.dataset.speed || 0));
+            });
+            let status = "Scout first for defense estimate";
+            if (defenderDefense > 0) {
+                if (attack < defenderDefense) {
+                    status = "Likely defeat";
+                } else {
+                    const lossPressure = defenderAttack / Math.max(attack + durability, 1);
+                    status = lossPressure > 0.45 ? "Likely costly victory" : "Likely victory";
+                }
+            }
+            const travelSeconds = selectedUnits && slowestSpeed > 0 ? Math.max(Math.floor(targetDistance / slowestSpeed * 60), 8) : 0;
+            const lootStatus = visibleLoot > 0 ? `<span>Visible loot ${visibleLoot}</span><span>Carry covers ${Math.min(carry, visibleLoot)} / ${visibleLoot}</span>` : "";
+            const recommended = defenderDefense > 0 ? `<span>Recommended attack ${Math.ceil(defenderDefense * 1.25)}</span>` : "";
+            const travel = travelSeconds ? `<span>Travel ${travelSeconds}s each way</span>` : "";
+            const tone = status === "Likely victory" ? "good" : status === "Likely defeat" ? "danger" : "caution";
+            estimate.innerHTML = `<span>Selected attack ${attack}</span><span>Selected durability ${durability}</span><span>Selected carry ${carry}</span>${travel}${lootStatus}${recommended}<span class="estimate-outcome ${tone}">${status}</span>`;
+        }
+
+        inputs.forEach((input) => input.addEventListener("input", updateEstimate));
+        function clearInputs() {
+            inputs.forEach((input) => { input.value = 0; });
+        }
+
+        function selectByTarget(target, statName) {
+            clearInputs();
+            let total = 0;
+            const sortedInputs = [...inputs].sort((a, b) => Number(b.dataset[statName] || 0) - Number(a.dataset[statName] || 0));
+            sortedInputs.forEach((input) => {
+                if (total >= target) return;
+                const stat = Number(input.dataset[statName] || 0);
+                const max = Number(input.max || 0);
+                if (stat <= 0 || max <= 0) return;
+                const needed = Math.ceil((target - total) / stat);
+                const amount = Math.min(max, needed);
+                input.value = amount;
+                total += amount * stat;
+            });
+        }
+
+        function selectRecommendedForce() {
+            clearInputs();
+            const attackTarget = Math.ceil(defenderDefense * 1.25);
+            const durabilityTarget = Math.ceil(defenderAttack * 1.2);
+            let attack = 0;
+            let durability = 0;
+            const score = input => Number(input.dataset.damage || 0) + Number(input.dataset.durability || 0) * .45;
+            [...inputs].sort((a, b) => score(b) - score(a)).forEach(input => {
+                if (attack >= attackTarget && durability >= durabilityTarget) return;
+                const damage = Number(input.dataset.damage || 0);
+                const toughness = Number(input.dataset.durability || 0);
+                const max = Number(input.max || 0);
+                if (!max) return;
+                const forAttack = damage > 0 ? Math.ceil(Math.max(attackTarget - attack, 0) / damage) : 0;
+                const forDurability = toughness > 0 ? Math.ceil(Math.max(durabilityTarget - durability, 0) / toughness) : 0;
+                const amount = Math.min(max, Math.max(forAttack, forDurability, 1));
+                input.value = amount;
+                attack += amount * damage;
+                durability += amount * toughness;
+            });
+        }
+
+        presetButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                if (button.dataset.raidPreset === "clear") clearInputs();
+                if (button.dataset.raidPreset === "safe" && defenderDefense > 0) selectRecommendedForce();
+                if (button.dataset.raidPreset === "carry" && visibleLoot > 0) selectByTarget(visibleLoot, "carry");
+                updateEstimate();
+            });
+        });
+        updateEstimate();
+    })();
+
+    (() => {
+        const filters = Array.from(document.querySelectorAll("[data-map-filter]"));
+        const grid = document.querySelector(".map-grid");
+        const tiles = Array.from(document.querySelectorAll(".map-tile"));
+        if (!filters.length || !grid || !tiles.length) return;
+
+        function tileMatches(tile, filter) {
+            if (filter === "all") return true;
+            if (filter === "scouted") return tile.classList.contains("scouted");
+            if (filter === "movement") return tile.classList.contains("has-movement");
+            if (filter === "camp") return tile.classList.contains("npc_camp");
+            if (filter === "spice") return ["spice_bloom_small", "spice_bloom_medium", "spice_bloom_large"].some((type) => tile.classList.contains(type));
+            if (filter === "water") return tile.classList.contains("water_oasis");
+            if (filter === "iron") return tile.classList.contains("iron_outcrop");
+            if (filter === "wood") return tile.classList.contains("scrap_field");
+            if (filter === "resource") return ["spice_bloom_small", "spice_bloom_medium", "spice_bloom_large", "water_oasis", "iron_outcrop", "scrap_field"].some((type) => tile.classList.contains(type));
+            return true;
+        }
+
+        function applyFilter(filter) {
+            grid.dataset.activeFilter = filter;
+            filters.forEach((button) => button.classList.toggle("active", button.dataset.mapFilter === filter));
+            tiles.forEach((tile) => tile.classList.toggle("dimmed", !tileMatches(tile, filter)));
+        }
+
+        filters.forEach((button) => button.addEventListener("click", () => applyFilter(button.dataset.mapFilter)));
+        const densityButton = document.querySelector("[data-map-density]");
+        const calm = localStorage.getItem("desertHousesMapDensity") !== "detailed";
+        function applyDensity(isCalm) {
+            grid.classList.toggle("map-calm", isCalm);
+            densityButton?.classList.toggle("active", isCalm);
+            densityButton?.setAttribute("aria-pressed", String(isCalm));
+            if (densityButton) densityButton.textContent = isCalm ? "Clear view" : "Full detail";
+            localStorage.setItem("desertHousesMapDensity", isCalm ? "calm" : "detailed");
+        }
+        densityButton?.addEventListener("click", () => applyDensity(!grid.classList.contains("map-calm")));
+        applyDensity(calm);
+    })();
+
+    (() => {
+        const grid = document.querySelector(".map-grid");
+        const controls = Array.from(document.querySelectorAll("[data-map-zoom]"));
+        if (!grid || !controls.length) return;
+        const savedZoom = localStorage.getItem("desertHousesMapZoom") || "normal";
+
+        function applyZoom(zoom) {
+            const safeZoom = ["compact", "normal", "large"].includes(zoom) ? zoom : "normal";
+            grid.dataset.zoom = safeZoom;
+            localStorage.setItem("desertHousesMapZoom", safeZoom);
+            controls.forEach((button) => button.classList.toggle("active", button.dataset.mapZoom === safeZoom));
+        }
+
+        controls.forEach((button) => button.addEventListener("click", () => applyZoom(button.dataset.mapZoom)));
+        applyZoom(savedZoom);
+    })();
+
+    (() => {
+        const panel = document.querySelector(".map-panel");
+        const grid = panel?.querySelector(".map-grid");
+        if (!panel || !grid) return;
+        let tracking = false;
+        let moved = false;
+        let suppressClick = false;
+        let startX = 0;
+        let startY = 0;
+        let scrollLeft = 0;
+        let scrollTop = 0;
+        let deltaX = 0;
+        let deltaY = 0;
+        let frameRequested = false;
+
+        function applyDragTransform() {
+            grid.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+            frameRequested = false;
+        }
+
+        panel.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0 || event.target.closest("button, input, label")) return;
+            tracking = true;
+            moved = false;
+            startX = event.clientX;
+            startY = event.clientY;
+            scrollLeft = panel.scrollLeft;
+            scrollTop = panel.scrollTop;
+            deltaX = 0;
+            deltaY = 0;
+        });
+
+        panel.addEventListener("pointermove", (event) => {
+            if (!tracking) return;
+            const dx = event.clientX - startX;
+            const dy = event.clientY - startY;
+            if (!moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+                moved = true;
+                panel.classList.add("dragging");
+                panel.setPointerCapture(event.pointerId);
+            }
+            if (!moved) return;
+            deltaX = dx;
+            deltaY = dy;
+            if (!frameRequested) {
+                frameRequested = true;
+                window.requestAnimationFrame(applyDragTransform);
+            }
+        });
+
+        function stopDragging(event) {
+            if (!tracking) return;
+            tracking = false;
+            suppressClick = moved;
+            if (moved) {
+                panel.scrollLeft = scrollLeft - deltaX;
+                panel.scrollTop = scrollTop - deltaY;
+                grid.style.transform = "";
+            }
+            deltaX = 0;
+            deltaY = 0;
+            panel.classList.remove("dragging");
+            if (panel.hasPointerCapture(event.pointerId)) panel.releasePointerCapture(event.pointerId);
+            window.setTimeout(() => {
+                moved = false;
+                suppressClick = false;
+            }, 0);
+        }
+
+        panel.addEventListener("pointerup", stopDragging);
+        panel.addEventListener("pointercancel", stopDragging);
+        panel.addEventListener("click", (event) => {
+            if (!suppressClick) return;
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+    })();
+    (() => {
+        // Decorative rocks in SandDuneTile.png, accounting for the 115% centered crop.
+        // Offsets affect presentation and hit targets only, never world coordinates.
+        const grid = document.querySelector('.map-grid');
+        if (!grid) return;
+        const rocks = [
+            [240, 495, 38], [1060, 584, 28], [1050, 735, 35],
+            [250, 1020, 57], [1020, 1015, 61], [365, 1080, 31],
+            [865, 1090, 25], [190, 930, 24], [890, 165, 29]
+        ].map(([x, y, r]) => ({x: x / 1254 * 1.15 - .075, y: y / 1254 * 1.15 - .075, r: r / 1254 * 1.15}));
+        const fields = Array.from(grid.querySelectorAll('.map-tile')).map((tile, i) => ({
+            tile, x: (i % 31 + .5) / 31, y: (Math.floor(i / 31) + .5) / 31
+        })).filter(({tile}) => !tile.classList.contains('desert'));
+        const radius = .014;
+        const clearOfRocks = (x, y) => rocks.every(r => Math.hypot(x - r.x, y - r.y) > r.r + radius);
+        const occupied = fields.filter(p => clearOfRocks(p.x, p.y) || p.tile.classList.contains('player_base'));
+        fields.forEach(p => {
+            if (occupied.includes(p)) return;
+            let destination;
+            for (let step = 1; step <= 28 && !destination; step++) {
+                const distance = step / 310;
+                for (let direction = 0; direction < 24; direction++) {
+                    const angle = direction * Math.PI / 12;
+                    const x = p.x + Math.cos(angle) * distance;
+                    const y = p.y + Math.sin(angle) * distance;
+                    if (x < radius || y < radius || x > 1 - radius || y > 1 - radius) continue;
+                    if (!clearOfRocks(x, y) || occupied.some(q => Math.hypot(x - q.x, y - q.y) < radius * 2)) continue;
+                    destination = {x, y};
+                    break;
+                }
+            }
+            if (destination) {
+                p.tile.style.translate = `${(destination.x - p.x) * 3100}% ${(destination.y - p.y) * 3100}%`;
+                p.tile.classList.add('terrain-offset');
+                occupied.push(destination);
+            }
+        });
+    })();
+    (() => {
+        const panel = document.querySelector('.map-panel');
+        const button = document.querySelector('[data-locate-selected]');
+        function locateSelected() {
+            const tile = panel?.querySelector('.map-tile.selected');
+            if (!tile) return;
+            const p = panel.getBoundingClientRect(), t = tile.getBoundingClientRect();
+            panel.scrollTo({left: panel.scrollLeft + t.left - p.left - (panel.clientWidth - t.width) / 2,
+                top: panel.scrollTop + t.top - p.top - (panel.clientHeight - t.height) / 2,
+                behavior: 'auto'});
+        }
+        button?.addEventListener('click', locateSelected);
+        if (new URLSearchParams(location.search).get('focus') === 'selected') requestAnimationFrame(locateSelected);
+    })();
+</script>
+{% endblock %}
+

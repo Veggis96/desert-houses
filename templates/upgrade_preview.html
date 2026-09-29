@@ -1,0 +1,12 @@
+<div class="upgrade-preview">
+    <div><strong>Level {{ upgrade_card.effective_level }} → {{ upgrade_card.effective_level + 1 }}</strong><span>{{ upgrade_card.duration }}s build time</span></div>
+    {% if upgrade_card.key == 'spice_refinery' %}
+        <p>Melange output <strong>{{ upgrade_card.production_before|round(1) }} → {{ upgrade_card.production_after|round(1) }}/hour</strong></p>
+        <small>Consumes {{ upgrade_card.conversion_ratio }} Spice Sand per Melange. Efficiency improves through Melange Processing research.</small>
+        <p>Sand demand <strong>{{ upgrade_card.sand_demand_before|round(1) }} → {{ upgrade_card.sand_demand_after|round(1) }}/hour</strong></p>
+        <small>Current fields provide {{ upgrade_card.field_sand_rate|round(1) }} Sand/hour. Coverage after upgrade: {{ upgrade_card.field_coverage_after|round|int }}%.</small>
+    {% elif upgrade_card.resource %}<p>{{ resource_display_name(upgrade_card.resource) }} production <strong>{{ upgrade_card.production_before|round(1) }} → {{ upgrade_card.production_after|round(1) }}/hour</strong></p>{% endif %}
+    {% if upgrade_card.key == 'warehouse' %}<p>Storage per resource <strong>{{ upgrade_card.storage_before }} → {{ upgrade_card.storage_after }}</strong></p>{% endif %}
+    <small>Water upkeep +0.5/hour{% if upgrade_card.queued_count %} · After queued upgrades{% endif %}</small>
+    {% if upgrade_card.unlocks %}<p>Unlock requirements advanced: {{ upgrade_card.unlocks|join(', ') }}. Other requirements may apply.</p>{% endif %}
+</div>

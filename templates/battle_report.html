@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Battle Report{% endblock %}
+
+{% block content %}
+<section class="hero compact-panel">
+    <div>
+        <p class="eyebrow">{{ report.report_type|capitalize }} Report</p>
+        <h1>{{ report.title }}</h1>
+        <p>{{ report.village_name }} {% if report.report_type == 'scout' %}scouted{% else %}attacked{% endif %} {{ report.target_name }} at {{ report.target_x }}, {{ report.target_y }}.</p>
+    </div>
+    <a class="button-link" href="{{ url_for('inbox') }}">Back to Inbox</a>
+</section>
+
+<section class="resource-grid">
+    <article class="resource-card">
+        <span>Outcome</span>
+        <strong>{{ report.outcome }}</strong>
+        <small>{{ report.created_at[:16].replace('T', ' ') }}</small>
+    </article>
+    <article class="resource-card">
+        <span>{% if report.report_type == 'scout' %}Defenders Seen{% else %}Defenders Lost{% endif %}</span>
+        <strong>{% if report.report_type == 'scout' %}{{ enemy_before_units|sum(attribute='amount') }}{% else %}{{ enemy_lost_units|sum(attribute='amount') }}{% endif %}</strong>
+        <small>{% if report.report_type == 'scout' %}Observed units{% else %}{{ enemy_before_units|sum(attribute='amount') }} to {{ enemy_after_units|sum(attribute='amount') }} units{% endif %}</small>
+    </article>
+    <article class="resource-card">
+        <span>{% if report.report_type == 'scout' %}Resources Seen{% else %}Loot{% endif %}</span>
+        <strong>{{ (report.loot_iron + report.loot_wood + report.loot_water + report.loot_spice)|round|int }}</strong>
+        <small>Total resources carried</small>
+    </article>
+    <article class="resource-card">
+        <span>Status</span>
+        <strong>{% if report.is_read %}Read{% else %}Unread{% endif %}</strong>
+        <small>Opened reports are marked read</small>
+    </article>
+</section>
+
+<div class="two-column spaced-panel">
+    <section class="panel">
+        <p class="eyebrow">Your Troops</p>
+        <h2>Sent</h2>
+        <table>
+            <thead><tr><th>Unit</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for unit in sent_units %}
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td></tr>
+                {% else %}
+                    <tr><td colspan="2">No units recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <p class="eyebrow">Your Troops</p>
+        <h2>Lost</h2>
+        <table>
+            <thead><tr><th>Unit</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for unit in lost_units %}
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td></tr>
+                {% else %}
+                    <tr><td colspan="2">No losses.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<div class="two-column spaced-panel">
+    <section class="panel">
+        <p class="eyebrow">Enemy Defenders</p>
+        <h2>{% if report.report_type == 'scout' %}Observed{% else %}Before Battle{% endif %}</h2>
+        <table>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th></tr></thead>
+            <tbody>
+                {% for unit in enemy_before_units %}
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td></tr>
+                {% else %}
+                    <tr><td colspan="5">No defenders observed.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <p class="eyebrow">Enemy Defenders</p>
+        <h2>{% if report.report_type == 'scout' %}Remaining{% else %}Lost{% endif %}</h2>
+        <table>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th></tr></thead>
+            <tbody>
+                {% set shown_units = enemy_after_units if report.report_type == 'scout' else enemy_lost_units %}
+                {% for unit in shown_units %}
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td></tr>
+                {% else %}
+                    <tr><td colspan="5">No enemy losses.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<div class="two-column spaced-panel">
+    <section class="panel">
+        <p class="eyebrow">Your Troops</p>
+        <h2>Survived</h2>
+        <table>
+            <thead><tr><th>Unit</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for unit in survived_units %}
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td></tr>
+                {% else %}
+                    <tr><td colspan="2">No survivors.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel">
+        <p class="eyebrow">{% if report.report_type == 'scout' %}Intel{% else %}Loot{% endif %}</p>
+        <h2>{% if report.report_type == 'scout' %}Resources Spotted{% else %}Resources Gained{% endif %}</h2>
+        <div class="cost-list">
+            <span>Iron {{ report.loot_iron|round|int }}</span>
+            <span>Wood {{ report.loot_wood|round|int }}</span>
+            <span>Water {{ report.loot_water|round|int }}</span>
+            <span>Spice Sand {{ report.loot_spice|round|int }}</span>
+        </div>
+        <p class="muted">{% if report.report_type == 'scout' %}Scouts observe resources but do not carry loot home.{% else %}Loot appears in your base when surviving troops return.{% endif %}</p>
+    </section>
+</div>
+{% endblock %}

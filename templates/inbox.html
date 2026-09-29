@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Inbox{% endblock %}
+
+{% block content %}
+<section class="hero compact-panel">
+    <div>
+        <p class="eyebrow">Command Inbox</p>
+        <h1>Battle Reports</h1>
+        <p>Review scout intelligence, raid outcomes, troop losses, enemy losses, and loot gained.</p>
+    </div>
+    <div class="stat-stack">
+        <div class="capacity">Reports: {{ reports|length }}</div>
+        {% if filter_counts.unread > 0 %}
+            <form method="post" action="{{ url_for('mark_reports_read') }}" class="inline-form">
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <button class="secondary compact" type="submit">Mark All Read</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel compact-panel report-filters" aria-label="Report filters">
+    {% for key, label in [('all', 'All'), ('unread', 'Unread'), ('scout', 'Scout'), ('raid', 'Raid')] %}
+        <a class="report-filter {% if report_filter == key %}active{% endif %}" href="{{ url_for('inbox', filter=key) }}">
+            <span>{{ label }}</span>
+            <strong>{{ filter_counts[key] }}</strong>
+        </a>
+    {% endfor %}
+</section>
+
+<section class="panel">
+    <div class="list-grid">
+        {% for report in reports %}
+            {% set summary = report_summaries[report.id] %}
+            <article class="building-card report-card {{ report.report_type }} {% if not report.is_read %}unread{% endif %}">
+                <div class="report-card-main">
+                    <div class="report-icon" aria-hidden="true">{{ 'S' if report.report_type == 'scout' else 'R' }}</div>
+                    <div>
+                        <p class="eyebrow">{{ report.report_type|capitalize }} | {{ report.created_at[:16].replace('T', ' ') }}</p>
+                        <h3><a href="{{ url_for('battle_report', report_id=report.id) }}">{{ report.title }}</a></h3>
+                        <p class="muted">{{ report.village_name }} {% if report.report_type == 'scout' %}scouted{% else %}attacked{% endif %} {{ report.target_name }} at {{ report.target_x }}, {{ report.target_y }}.</p>
+                    </div>
+                </div>
+                <div class="cost-list">
+                    <span>{{ report.outcome }}</span>
+                    <span>Sent {{ summary.sent_count }}</span>
+                    <span>Lost {{ summary.lost_count }}</span>
+                    <span>Enemy seen {{ summary.enemy_seen_count }}</span>
+                    <span>Enemy lost {{ summary.enemy_lost_count }}</span>
+                    <span>Loot {{ (report.loot_iron + report.loot_wood + report.loot_water + report.loot_spice)|round|int }}</span>
+                    {% if not report.is_read %}<span>Unread</span>{% endif %}
+                </div>
+            </article>
+        {% else %}
+            <p class="muted">No battle reports yet. Send troops from the map to create reports.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Desert Houses{% endblock %}</title>
+    <meta name="theme-color" content="#111513">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='interface.css') }}">
+</head>
+<body class="{{ 'is-auth' if request.endpoint in ['login', 'register'] else 'is-game' }}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="site-header">
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('dashboard') if session.get('user_id') else url_for('login') }}"><span class="brand-mark" aria-hidden="true">◈</span><span>Desert Houses<small>A world worth claiming</small></span></a>
+        <nav aria-label="Main navigation">
+            {% if session.get('user_id') %}
+                <a class="{% if request.endpoint in ['dashboard', 'resource_fields_page', 'barracks_page', 'flight_works_page', 'research_center_page', 'influence_sanctuary_page', 'command_center_page'] %}active{% endif %}" href="{{ url_for('dashboard') }}">Base</a>
+                <a class="{% if request.endpoint in ['map_page', 'send_map_raid', 'send_map_scout', 'capture_spice_bloom', 'reinforce_spice_bloom', 'harvest_spice_bloom'] %}active{% endif %}" href="{{ url_for('map_page') }}">Map</a>
+                <a class="{% if request.endpoint in ['inbox', 'battle_report'] %}active{% endif %}" href="{{ url_for('inbox') }}">Inbox{% if unread_report_count %} <span class="nav-badge">{{ unread_report_count }}</span>{% endif %}</a>
+                <a class="{% if request.endpoint == 'leaderboard' %}active{% endif %}" href="{{ url_for('leaderboard') }}">Leaderboard</a>
+                <a class="{% if request.endpoint in ['alliances', 'alliance_home', 'alliance_topic'] %}active{% endif %}" href="{{ url_for('alliances') }}">Alliances</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a class="{% if request.endpoint == 'login' %}active{% endif %}" href="{{ url_for('login') }}">Login</a>
+                <a class="{% if request.endpoint == 'register' %}active{% endif %}" href="{{ url_for('register') }}">Choose a house</a>
+            {% endif %}
+        </nav>
+    </header>
+    {% if resource_overview %}
+    <section class="global-resources" aria-label="Resources and hourly production">
+        {% for resource, amount in resource_overview.amounts.items() %}
+        <div class="global-resource {{ 'resource-deficit' if resource_overview.rates[resource] < 0 else '' }}">
+            <span>{{ resource_display_name(resource) }}</span>
+            <strong>{{ amount|round(2) if resource == 'melange' else amount|round|int }} <small>/ {{ resource_overview.capacity }}</small></strong>
+            <small>{{ ('%+.2f' if resource == 'melange' else '%+.1f')|format(resource_overview.rates[resource]) }}/h</small>
+            <meter min="0" max="{{ resource_overview.capacity }}" value="{{ amount }}" aria-label="{{ resource_display_name(resource) }} storage"></meter>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+    </div>
+
+    <main class="page" id="main-content" tabindex="-1">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <section class="messages" role="status">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+    <script>
+        (() => {
+            const scrollMatch = window.location.hash.match(/^#scroll-(\d+)$/);
+            if (scrollMatch) {
+                window.requestAnimationFrame(() => {
+                    window.scrollTo(0, Number(scrollMatch[1]));
+                    history.replaceState(null, "", window.location.pathname + window.location.search);
+                });
+            }
+
+            document.addEventListener("submit", (event) => {
+                const nextInput = event.target.querySelector('input[name="next"]');
+                if (!nextInput || !nextInput.value.startsWith("/")) return;
+                const target = nextInput.value.split("#")[0];
+                nextInput.value = `${target}#scroll-${Math.round(window.scrollY)}`;
+            });
+
+            document.addEventListener("click", (event) => {
+                const link = event.target.closest("a[data-preserve-scroll]");
+                if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                const url = new URL(link.href, window.location.href);
+                if (url.origin !== window.location.origin) return;
+                url.hash = `scroll-${Math.round(window.scrollY)}`;
+                link.href = url.pathname + url.search + url.hash;
+            });
+
+            const timers = Array.from(document.querySelectorAll('[data-build-countdown]'));
+            function updateBuildTimers() {
+                timers.forEach(timer => {
+                    const seconds = Math.max(0, Math.ceil((Date.parse(timer.dataset.buildCountdown) - Date.now()) / 1000));
+                    timer.textContent = seconds ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : 'Ready';
+                    if (!seconds) timer.title = 'Refresh to see the completed building';
+                });
+            }
+            updateBuildTimers();
+            if (timers.length) window.setInterval(updateBuildTimers, 1000);
+            const fills = Array.from(document.querySelectorAll(".progress-fill[data-started-at][data-finish-at]"));
+            if (!fills.length) return;
+            function updateProgressBars() {
+                const now = Date.now();
+                fills.forEach((fill) => {
+                    const startedAt = Date.parse(fill.dataset.startedAt);
+                    const finishAt = Date.parse(fill.dataset.finishAt);
+                    if (Number.isNaN(startedAt) || Number.isNaN(finishAt) || finishAt <= startedAt) {
+                        fill.style.width = "0%";
+                        fill.closest(".progress-track")?.classList.add("waiting");
+                        return;
+                    }
+                    const progress = Math.min(Math.max((now - startedAt) / (finishAt - startedAt), 0), 1);
+                    fill.style.width = `${Math.round(progress * 100)}%`;
+                    fill.closest(".progress-track")?.classList.toggle("complete", progress >= 1);
+                });
+            }
+            updateProgressBars();
+            window.setInterval(updateProgressBars, 1000);
+        })();
+    </script>
+</body>
+</html>

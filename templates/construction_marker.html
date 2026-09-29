@@ -1,0 +1,8 @@
+{% set jobs = construction_queue|selectattr('building_key', 'equalto', construction_key)|list %}
+{% if jobs %}
+{% set job = jobs[0] %}
+<span class="construction-marker" title="{{ 'Building' if job.finish_at else 'Waiting in queue' }} level {{ job.target_level }}">
+    <span class="construction-label">{% if job.finish_at %}Building <span data-build-countdown="{{ job.finish_at }}">…</span>{% else %}Queued{% endif %} · Lv {{ job.target_level }}</span>
+    <span class="progress-track"><span class="progress-fill" data-started-at="{{ job.started_at or '' }}" data-finish-at="{{ job.finish_at or '' }}"></span></span>
+</span>
+{% endif %}

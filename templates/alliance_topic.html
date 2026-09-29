@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ topic.title }}{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Alliance Topic</p>
+        <h1>{{ topic.title }}</h1>
+        <p>Started by {{ topic.username }}</p>
+    </div>
+    <div class="button-row">
+        <a class="button-link" href="{{ url_for('alliance_home') }}">Back to Alliance</a>
+        {% if membership.role in ['leader', 'officer'] %}
+            <form method="post" action="{{ url_for('delete_topic', topic_id=topic.id) }}">
+                <button class="danger" type="submit">Delete Topic</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel spaced-panel">
+    <div class="post-list">
+        {% for post in posts %}
+            <article class="post-card">
+                <header>
+                    <div>
+                        <strong>{{ post.username }}</strong>
+                        <span class="muted">{{ post.role|capitalize }} | {{ post.created_at[:16].replace('T', ' ') }}</span>
+                    </div>
+                    {% if membership.role in ['leader', 'officer'] %}
+                        <form method="post" action="{{ url_for('delete_post', post_id=post.id) }}">
+                            <button class="secondary compact" type="submit">Delete Post</button>
+                        </form>
+                    {% endif %}
+                </header>
+                <p>{{ post.body }}</p>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Reply</p>
+            <h2>Add Message</h2>
+        </div>
+    </div>
+    <form method="post" action="{{ url_for('reply_topic', topic_id=topic.id) }}" class="wide-form">
+        <label for="body">Message</label>
+        <textarea id="body" name="body" required maxlength="2000"></textarea>
+        <button type="submit">Post Reply</button>
+    </form>
+</section>
+{% endblock %}

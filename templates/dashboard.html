@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Base Dashboard{% endblock %}
+
+{% block content %}
+<div class="base-layout">
+{% include "base_nav.html" %}
+<div class="base-main">
+<section class="hero">
+    <div>
+        <p class="eyebrow">{{ user.faction_name }}</p>
+        <h1>{{ village.name }}</h1>
+        <p>{{ user.faction_description }}</p>
+    </div>
+    <div class="stat-stack">
+        <div class="capacity">Points: {{ village.points }}</div>
+        {% if membership %}
+            <div class="capacity">Alliance: [{{ membership.alliance_tag }}]</div>
+        {% else %}
+            <div class="capacity">No alliance</div>
+        {% endif %}
+        <div class="capacity">Storage: {{ capacity|round|int }}</div>
+    </div>
+</section>
+
+<section class="resource-grid">
+    {% for resource in ['iron', 'wood', 'water', 'spice', 'melange'] %}
+        <article class="resource-card {{ resource }}">
+            <span>{{ resource_display_name(resource) }}</span>
+            <strong>{{ village[resource]|round(2 if resource == 'melange' else 1) }}</strong>
+            <small>{{ ('%+.2f' if resource == 'melange' else '%+.1f')|format(rates[resource]) }}/hour</small>
+            <small class="resource-trend {{ 'negative' if rates[resource] < 0 else 'positive' if rates[resource] > 0 else 'stable' }}">{{ resource_trend_label(village[resource], rates[resource], capacity) }}</small>
+            <div class="resource-meter" aria-label="{{ resource_display_name(resource) }} storage {{ ((village[resource] / capacity) * 100)|round|int }}%">
+                <span style="width: {{ [((village[resource] / capacity) * 100), 100]|min }}%"></span>
+            </div>
+        </article>
+    {% endfor %}
+</section>
+
+{% if rates.water < 0 %}
+    <section class="warning">
+        Water is running at a deficit. Upgrade Dew Fields before expanding too aggressively.
+    </section>
+{% endif %}
+
+{% if alerts %}
+<section class="dashboard-alerts">
+    {% for alert in alerts %}
+        <article class="dashboard-alert {{ alert.level }}">
+            <strong>{{ alert.title }}</strong>
+            <span>{{ alert.text }}</span>
+        </article>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if priorities %}
+<section class="priority-section" aria-labelledby="priority-heading">
+    <div class="section-heading priority-heading">
+        <div>
+            <p class="eyebrow">Strategic Guidance</p>
+            <h2 id="priority-heading">Next orders</h2>
+        </div>
+        <p class="muted">Highest-impact actions for your current base state.</p>
+    </div>
+    <div class="priority-grid">
+        {% for priority in priorities %}
+            <article class="priority-card {{ priority.tone }}">
+                <p class="eyebrow">{{ priority.eyebrow }}</p>
+                <h3>{{ priority.title }}</h3>
+                <p>{{ priority.text }}</p>
+                <a href="{{ priority.href }}">{{ priority.cta }} <span aria-hidden="true">→</span></a>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="quick-actions" aria-label="Quick actions">
+    <a href="{{ url_for('resource_fields_page') }}">Upgrade Fields</a>
+    <a href="{{ url_for('command_center_page') }}">Command Center</a>
+    <a href="{{ url_for('map_page') }}">Open Map</a>
+    <a href="{{ url_for('barracks_page') }}">Train Troops</a>
+    <a href="{{ url_for('research_center_page') }}">Research</a>
+    <a href="{{ url_for('inbox') }}">Read Reports</a>
+</section>
+
+<section class="panel village-panel overview-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Base Infrastructure</p>
+            <h2>Your settlement</h2>
+        </div>
+        <p class="muted">Water consumption: {{ water_consumption|round(1) }}/hour</p>
+    </div>
+
+    <label class="base-building-picker" for="base-building-select">Inspect building
+        <select id="base-building-select">
+            {% for slot in base_visual_slots if slot.building %}
+                <option value="{{ slot.building.key }}">{{ slot.building.name }} — {% if slot.building.level %}Level {{ slot.building.level }}{% else %}Not built{% endif %}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <div class="village-view">
+        <div class="village-map scene-art-map village-scene-map base-plot-map" style="--scene-image: url('{{ url_for('static', filename='images/base/base_courtyard_background_v3.png') }}');" aria-label="Village buildings">
+        {% for slot in base_visual_slots %}
+            {% set building = slot.building %}
+            {% if building %}
+            <button class="building-spot base-plot slot-{{ slot.key }} {{ building.key }} {% if building.level == 0 %}foundation{% endif %} {% if loop.first %}active{% endif %}" type="button" data-building-key="{{ building.key }}" aria-label="{{ building.name }}, {{ 'level ' ~ building.level if building.level else 'not built' }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+                <span class="plot-foundation" aria-hidden="true"><img src="{{ url_for('static', filename=slot.foundation) }}" alt=""></span>
+                <span class="building-art base-building-art asset-art" aria-hidden="true">
+                    <img src="{{ url_for('static', filename=('images/base/integrated/' ~ building.key ~ '.png') if slot.art_image == ('images/base/building_' ~ building.key ~ '.png') else slot.art_image) }}" alt="">
+                </span>
+                <span class="building-label">{{ building.name }}{% if building.level == 0 %}<small class="unbuilt-label">Not built</small>{% endif %}</span>
+                <span class="level-badge">{% if building.level == 0 %}Site{% else %}Lv {{ building.level }}{% endif %}</span>
+                {% with construction_key=building.key %}{% include "construction_marker.html" %}{% endwith %}
+            </button>
+            {% else %}
+            <div class="building-spot base-plot empty-plot slot-{{ slot.key }}" aria-hidden="true">
+                <span class="plot-foundation"><img src="{{ url_for('static', filename=slot.foundation) }}" alt=""></span>
+                <span class="building-label">Open Plot</span>
+            </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+
+        <div class="village-detail-stack">
+        {% for building in buildings %}
+            <article class="building-detail {% if building.key == 'command_center' %}active{% endif %}" data-building-detail="{{ building.key }}">
+                <div class="detail-art">
+                    {% for slot in base_visual_slots if slot.building and slot.building.key == building.key %}
+                        <img src="{{ url_for('static', filename=('images/base/integrated/' ~ building.key ~ '.png') if slot.art_image == ('images/base/building_' ~ building.key ~ '.png') else slot.art_image) }}" alt="">
+                    {% endfor %}
+                </div>
+                <div class="base-detail-copy">
+                    <h3>{{ building.name }}</h3>
+                    <p>Level {{ building.level }}</p>
+                    {% if building.resource %}
+                        {% if building.key == 'spice_refinery' %}
+                            <p class="muted">Refines {{ building.conversion_ratio }} Spice Sand into 1 Melange at {{ building.production|round(1) }} Melange/hour.</p>
+                            {% if building.level > 0 %}
+                                <p class="muted refinery-supply-copy">Fields supply {{ building.field_sand_rate|round(1) }} of {{ building.sand_demand_before|round(1) }} Sand/hour · {{ building.field_coverage_before|round|int }}% coverage.</p>
+                            {% else %}
+                                <p class="muted refinery-supply-copy">At level 1, fields supply {{ building.field_sand_rate|round(1) }} of {{ building.sand_demand_after|round(1) }} Sand/hour · {{ building.field_coverage_after|round|int }}% coverage.</p>
+                            {% endif %}
+                            <p class="muted">Raid Spice Blooms to cover the deficit and keep the refinery running.</p>
+                        {% else %}
+                            <p class="muted">Produces {{ building.production|round(1) }} {{ resource_display_name(building.resource) }}/hour</p>
+                        {% endif %}
+                    {% elif building.key == 'embassy' %}
+                        <p class="muted">Unlocks alliances at level {{ embassy_alliance_level }}.</p>
+                    {% else %}
+                        <p class="muted">Infrastructure building.</p>
+                    {% endif %}
+                    {% if building.prerequisite_text %}
+                        <p class="muted">Requires {{ building.prerequisite_text }}.</p>
+                    {% endif %}
+                    {% if building.research_prerequisite_text %}
+                        <p class="muted">Requires {{ building.research_prerequisite_text }}.</p>
+                    {% endif %}
+                    {% if building.queued_count > 0 %}
+                        <p class="muted">Queued {{ building.queued_count }} time{% if building.queued_count != 1 %}s{% endif %}. Next target: level {{ building.effective_level + 1 }}.</p>
+                    {% endif %}
+                </div>
+                <div class="base-detail-actions">
+                {% with upgrade_card=building %}{% include 'upgrade_preview.html' %}{% endwith %}
+                <div class="cost-list">
+                    <span>Iron {{ building.cost.iron }}</span>
+                    <span>Wood {{ building.cost.wood }}</span>
+                    <span>Water {{ building.cost.water }}</span>
+                    {% if building.cost.spice > 0 %}<span>Spice Sand {{ building.cost.spice }}</span>{% endif %}
+                    {% if building.cost.get('melange', 0) > 0 %}<span>Melange {{ building.cost.melange }}</span>{% endif %}
+                </div>
+                {% if building.queue_full or building.missing_resources %}
+                    <div class="requirement-list">
+                        {% if building.queue_full %}<span>Construction queue full</span>{% endif %}
+                        {% for resource, amount in building.missing_resources.items() %}<span>Need {{ amount }} more {{ resource_display_name(resource) }}</span>{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('upgrade', building_key=building.key) }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" {% if not building.can_upgrade %}disabled{% endif %}>{% if building.level == 0 %}Construct{% else %}Upgrade{% endif %}</button>
+                </form>
+                {% if building.open_endpoint %}
+                    <a class="button-link" href="{{ url_for(building.open_endpoint) }}">Open</a>
+                {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="panel spaced-panel compact-panel tutorial-panel">
+    {% if tutorial.complete %}
+        <div>
+            <p class="eyebrow">Tutorial Complete</p>
+            <h2>{{ tutorial.guide }}'s guidance is complete</h2>
+        </div>
+        <p class="muted">More objectives will arrive with farming and colonization.</p>
+    {% else %}
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">{{ tutorial.guide }} | Step {{ tutorial.index }}/{{ tutorial.total }}</p>
+                <h2>{{ tutorial.step.title }}</h2>
+            </div>
+            {% if tutorial.ready %}
+                <form method="post" action="{{ url_for('claim_tutorial_reward') }}">
+                    <button type="submit">Claim Reward</button>
+                </form>
+            {% endif %}
+        </div>
+        <p class="compact-copy">{{ tutorial.step.text }}</p>
+        <div class="cost-list">
+            <span>Reward Iron {{ tutorial.step.reward.iron }}</span>
+            <span>Wood {{ tutorial.step.reward.wood }}</span>
+            <span>Water {{ tutorial.step.reward.water }}</span>
+            {% if tutorial.step.reward.spice > 0 %}<span>Spice Sand {{ tutorial.step.reward.spice }}</span>{% endif %}
+        </div>
+        {% if not tutorial.ready %}<p class="muted compact-copy">Complete the objective, then return here to claim the reward.</p>{% endif %}
+    {% endif %}
+</section>
+
+<section class="panel spaced-panel compact-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Sequential Queue</p>
+            <h2>Construction Queue {{ construction_queue|length }}/{{ construction_queue_limit }}</h2>
+        </div>
+    </div>
+    <div class="list-grid">
+        {% for item in construction_queue %}
+            <article class="building-card construction-item" {% if item.finish_at %}data-finish-at="{{ item.finish_at }}"{% endif %}>
+                <div>
+                    <h3>{{ building_defs[item.building_key]['name'] }} to level {{ item.target_level }}</h3>
+                    <p class="muted construction-timer">{{ queue_status(item) }}</p>
+                </div>
+                <div class="progress-track" aria-label="Construction progress">
+                    <span class="progress-fill" data-started-at="{{ item.started_at or '' }}" data-finish-at="{{ item.finish_at or '' }}"></span>
+                </div>
+                <span class="queue-state {{ 'active' if item.started_at else 'waiting' }}">{{ 'Active' if item.started_at else 'Waiting' }}</span>
+            </article>
+        {% else %}
+            <p class="muted">No active construction. Queue up to {{ construction_queue_limit }} building upgrades.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% if dev_tools_enabled %}
+<section class="panel spaced-panel danger-panel compact-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Development Only</p>
+                <h2>Dev Tools</h2>
+            </div>
+            <form method="post" action="{{ url_for('dev_boost_resources') }}">
+                <button class="secondary" type="submit">Boost Resources</button>
+            </form>
+        </div>
+        <p class="muted compact-copy">Sets all resources very high for local testing. Disable before any real public test.</p>
+    </section>
+{% endif %}
+
+<section class="panel spaced-panel compact-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Command Feed</p>
+            <h2>Latest Reports</h2>
+        </div>
+        <a class="button-link secondary" href="{{ url_for('inbox') }}">Open Inbox</a>
+    </div>
+    <div class="list-grid latest-report-grid">
+        {% for report in latest_reports %}
+            <a class="latest-report-card {% if not report.is_read %}unread{% endif %}" href="{{ url_for('battle_report', report_id=report.id) }}">
+                <span class="report-mini-type {{ report.report_type }}">{{ report.report_type|capitalize }}</span>
+                <strong>{{ report.outcome }}: {{ report.target_name }}</strong>
+                <small>{{ report.created_at[:16].replace('T', ' ') }} | {{ report.target_x }}, {{ report.target_y }}</small>
+            </a>
+        {% else %}
+            <p class="muted compact-copy">No reports yet. Send scouts or raids from the map to create command reports.</p>
+        {% endfor %}
+    </div>
+</section>
+
+
+</div>
+</div>
+<script>
+    (() => {
+        const spots = Array.from(document.querySelectorAll(".building-spot[data-building-key]"));
+        const details = Array.from(document.querySelectorAll(".building-detail[data-building-detail]"));
+        if (!spots.length || !details.length) return;
+
+        function selectBuilding(key) {
+            const picker = document.getElementById("base-building-select");
+            if (picker) picker.value = key;
+            spots.forEach((spot) => {
+                const active = spot.dataset.buildingKey === key;
+                spot.classList.toggle("active", active);
+                spot.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+            details.forEach((detail) => {
+                detail.classList.toggle("active", detail.dataset.buildingDetail === key);
+            });
+        }
+
+        spots.forEach((spot) => {
+            spot.addEventListener("click", () => selectBuilding(spot.dataset.buildingKey));
+        });
+        document.getElementById("base-building-select")?.addEventListener("change", (event) => selectBuilding(event.target.value));
+    })();
+
+    (() => {
+        const timers = Array.from(document.querySelectorAll(".construction-item[data-finish-at]"));
+        if (!timers.length) return;
+
+        let reloadScheduled = false;
+
+        function formatRemaining(totalSeconds) {
+            const seconds = Math.max(totalSeconds, 0);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes <= 0) return `${remainder}s remaining`;
+            return `${minutes}m ${String(remainder).padStart(2, "0")}s remaining`;
+        }
+
+        function tick() {
+            const now = Date.now();
+
+            timers.forEach((item, index) => {
+                const label = item.querySelector(".construction-timer");
+                const finishAt = Date.parse(item.dataset.finishAt);
+                if (!label || Number.isNaN(finishAt)) return;
+
+                const remaining = Math.ceil((finishAt - now) / 1000);
+                if (remaining > 0) {
+                    label.textContent = formatRemaining(remaining);
+                    return;
+                }
+
+                label.textContent = index === 0 ? "Completing..." : "Waiting...";
+                if (index === 0 && !reloadScheduled) {
+                    reloadScheduled = true;
+                    window.setTimeout(() => window.location.reload(), 1200);
+                }
+            });
+        }
+
+        tick();
+        window.setInterval(tick, 1000);
+    })();
+</script>
+{% endblock %}

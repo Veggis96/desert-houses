@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Alliance{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Alliance Tab</p>
+        <h1>[{{ alliance.tag }}] {{ alliance.name }}</h1>
+        <p>{{ alliance.description or 'No public description.' }}</p>
+    </div>
+    <div class="stat-stack">
+        <div class="capacity">Role: {{ membership.role|capitalize }}</div>
+        <div class="capacity">Members: {{ alliance.member_count }}</div>
+        <div class="capacity">Points: {{ alliance.total_points }}</div>
+    </div>
+</section>
+
+<section class="tab-row spaced-panel">
+    <a href="#overview">Overview</a>
+    <a href="#forum">Forum</a>
+    {% if membership.role in ['leader', 'officer'] %}<a href="#applications">Applications</a>{% endif %}
+    <a href="#management">Management</a>
+</section>
+
+<section id="overview" class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Overview</p>
+            <h2>Members</h2>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Role</th>
+                <th>Faction</th>
+                <th>Points</th>
+                {% if membership.role in ['leader', 'officer'] %}<th>Actions</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+                <tr>
+                    <td>{{ member.username }}</td>
+                    <td>{{ member.role|capitalize }}</td>
+                    <td>{{ member.faction_name }}</td>
+                    <td>{{ member.points }}</td>
+                    {% if membership.role in ['leader', 'officer'] %}
+                        <td>
+                            {% if member.user_id != user.id %}
+                                <div class="button-row">
+                                    {% if membership.role == 'leader' and member.role == 'member' %}
+                                        <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='promote') }}">
+                                            <button class="secondary" type="submit">Promote</button>
+                                        </form>
+                                    {% endif %}
+                                    {% if membership.role == 'leader' and member.role == 'officer' %}
+                                        <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='demote') }}">
+                                            <button class="secondary" type="submit">Demote</button>
+                                        </form>
+                                    {% endif %}
+                                    {% if membership.role == 'leader' and member.role in ['member', 'officer'] %}
+                                        <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='transfer') }}">
+                                            <button class="secondary" type="submit">Transfer</button>
+                                        </form>
+                                    {% endif %}
+                                    {% if member.role == 'member' %}
+                                        <form method="post" action="{{ url_for('manage_alliance_member', member_user_id=member.user_id, action='kick') }}">
+                                            <button class="danger" type="submit">Kick</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="muted">You</span>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section id="forum" class="panel spaced-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Forum</p>
+            <h2>Alliance Topics</h2>
+        </div>
+    </div>
+
+    <form method="post" action="{{ url_for('create_topic') }}" class="wide-form spaced-panel">
+        <label for="title">Topic Title</label>
+        <input id="title" name="title" required maxlength="120">
+
+        <label for="body">Opening Message</label>
+        <textarea id="body" name="body" required maxlength="2000"></textarea>
+
+        <button type="submit">Create Topic</button>
+    </form>
+
+    <div class="list-grid">
+        {% for topic in topics %}
+            <article class="building-card">
+                <div>
+                    <h3><a href="{{ url_for('view_topic', topic_id=topic.id) }}">{{ topic.title }}</a></h3>
+                    <p class="muted">Started by {{ topic.username }} | Posts: {{ topic.post_count }} | Updated {{ topic.updated_at[:16].replace('T', ' ') }}</p>
+                </div>
+                {% if membership.role in ['leader', 'officer'] %}
+                    <form method="post" action="{{ url_for('delete_topic', topic_id=topic.id) }}">
+                        <button class="secondary" type="submit">Delete Topic</button>
+                    </form>
+                {% endif %}
+            </article>
+        {% else %}
+            <p class="muted">No topics yet. Start the first discussion.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% if membership.role in ['leader', 'officer'] %}
+    <section id="applications" class="panel spaced-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Applications</p>
+                <h2>Pending Requests</h2>
+            </div>
+        </div>
+        <div class="list-grid">
+            {% for application in applications %}
+                <article class="building-card">
+                    <div>
+                        <h3>{{ application.username }}</h3>
+                        <p class="muted">{{ application.message or 'No message included.' }}</p>
+                    </div>
+                    <div class="button-row">
+                        <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='approve') }}">
+                            <button type="submit">Approve</button>
+                        </form>
+                        <form method="post" action="{{ url_for('decide_application', application_id=application.id, action='reject') }}">
+                            <button class="secondary" type="submit">Reject</button>
+                        </form>
+                    </div>
+                </article>
+            {% else %}
+                <p class="muted">No pending applications.</p>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
+{% if membership %}
+    <section id="management" class="panel spaced-panel {% if membership.role == 'leader' %}danger-panel{% endif %}">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Management</p>
+                <h2>{% if membership.role == 'leader' %}Disband Alliance{% else %}Leave Alliance{% endif %}</h2>
+            </div>
+        </div>
+        {% if membership.role == 'leader' %}
+            <p>Permanently deletes this alliance, its applications, topics, and posts. This cannot be undone.</p>
+            <form method="post" action="{{ url_for('disband_alliance') }}" class="wide-form">
+                <label for="confirm_tag">Type {{ alliance.tag }} to confirm</label>
+                <input id="confirm_tag" name="confirm_tag" required maxlength="8">
+                <button class="danger" type="submit">Permanently Disband Alliance</button>
+            </form>
+        {% else %}
+            <p>Leave this alliance. Your topics and posts remain visible to current members.</p>
+            <form method="post" action="{{ url_for('leave_alliance') }}">
+                <button class="danger" type="submit">Leave Alliance</button>
+            </form>
+        {% endif %}
+    </section>
+{% endif %}
+{% endblock %}

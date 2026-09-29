@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Command Center{% endblock %}
+
+{% block content %}
+<div class="base-layout">
+{% include "base_nav.html" %}
+<div class="base-main">
+<section class="hero">
+    <div>
+        <p class="eyebrow">Operational Control</p>
+        <h1>Command Center</h1>
+        <p>Track active missions, recent combat reports, and the latest scout intelligence from one place.</p>
+    </div>
+    <a class="button-link" href="{{ url_for('map_page') }}">Open Map</a>
+</section>
+
+<section class="resource-grid command-stats">
+    <article class="resource-card">
+        <span>Active Missions</span>
+        <strong>{{ movements|length }}</strong>
+        <small>Outbound and returning</small>
+    </article>
+    <article class="resource-card">
+        <span>Recent Reports</span>
+        <strong>{{ recent_reports|length }}</strong>
+        <small>Latest command records</small>
+    </article>
+    <article class="resource-card">
+        <span>Scouted Tiles</span>
+        <strong>{{ recent_intel|length }}</strong>
+        <small>Shown from latest intel</small>
+    </article>
+    <article class="resource-card">
+        <span>Command Level</span>
+        <strong>{{ buildings.command_center }}</strong>
+        <small>Infrastructure rating</small>
+    </article>
+</section>
+
+<section class="panel spaced-panel target-board-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Battle Planning</p>
+            <h2>Recommended Targets</h2>
+        </div>
+        <p class="muted">Ranked by your available army, visible loot, defense and distance.</p>
+    </div>
+    <div class="target-board">
+        {% for target in target_board %}
+            <a class="target-board-card {{ target.tone }}" href="{{ url_for('map_page', tile_id=target.tile_id) }}">
+                <span class="target-verdict">{{ target.verdict }}</span>
+                <div>
+                    <h3>{{ target.name }}</h3>
+                    <p class="muted">({{ target.x }}, {{ target.y }}) · {{ target.distance|round(1) }} tiles away</p>
+                </div>
+                <dl>
+                    <div><dt>Loot</dt><dd>{{ target.loot }}</dd></div>
+                    <div><dt>Defense</dt><dd>{{ target.defense|round|int }}</dd></div>
+                    <div><dt>Carry</dt><dd>{{ target.carry }} / {{ target.loot }}</dd></div>
+                </dl>
+                <span class="target-open">Plan raid <span aria-hidden="true">→</span></span>
+            </a>
+        {% else %}
+            <div class="target-board-empty">
+                <strong>No evaluated targets yet</strong>
+                <p class="muted">Scout resource fields or camps, then return here for a ranked comparison.</p>
+                <a class="button-link" href="{{ url_for('map_page') }}">Find targets</a>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel spaced-panel compact-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Mission Control</p>
+            <h2>Active Missions</h2>
+        </div>
+    </div>
+    <div class="list-grid command-list">
+        {% for movement in movements %}
+            <article class="building-card movement-item" {% if movement.status == 'outbound' %}data-finish-at="{{ movement.arrive_at }}"{% elif movement.return_at %}data-finish-at="{{ movement.return_at }}"{% endif %}>
+                <div>
+                    <h3>{{ movement.mission_type|capitalize }} {{ movement.status }} to {{ tile_display_name(movement.tile_type) }} ({{ movement.target_x }}, {{ movement.target_y }})</h3>
+                    <p class="muted movement-timer">{{ queue_status({'started_at': movement.started_at, 'finish_at': movement.arrive_at if movement.status == 'outbound' else movement.return_at}) }}</p>
+                    {% if movement.report %}<p class="muted compact-copy">{{ movement.report }}</p>{% endif %}
+                </div>
+                <div class="progress-track" aria-label="Mission progress">
+                    <span class="progress-fill" data-started-at="{{ movement.started_at }}" data-finish-at="{{ movement.arrive_at if movement.status == 'outbound' else movement.return_at or '' }}"></span>
+                </div>
+                <span class="mission-state {{ movement.status }}">{{ movement.status|capitalize }}</span>
+            </article>
+        {% else %}
+            <p class="muted compact-copy">No active missions. Dispatch scouts or raids from the map.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<div class="two-column spaced-panel">
+    <section class="panel compact-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Reports</p>
+                <h2>Latest Outcomes</h2>
+            </div>
+            <a class="button-link secondary" href="{{ url_for('inbox') }}">Inbox</a>
+        </div>
+        <div class="list-grid">
+            {% for report in recent_reports %}
+                {% set summary = report_summaries[report.id] %}
+                <a class="latest-report-card {% if not report.is_read %}unread{% endif %}" href="{{ url_for('battle_report', report_id=report.id) }}">
+                    <span class="report-mini-type {{ report.report_type }}">{{ report.report_type|capitalize }}</span>
+                    <strong>{{ report.outcome }}: {{ report.target_name }}</strong>
+                    <small>Sent {{ summary.sent_count }} | Lost {{ summary.lost_count }} | Enemy {{ summary.enemy_seen_count }}</small>
+                </a>
+            {% else %}
+                <p class="muted compact-copy">No reports yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="panel compact-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Scout Network</p>
+                <h2>Recent Intel</h2>
+            </div>
+            <a class="button-link secondary" href="{{ url_for('map_page') }}">Map</a>
+        </div>
+        <div class="list-grid">
+            {% for intel in recent_intel %}
+                {% set summary = intel_summaries[intel.tile_id] %}
+                <a class="intel-card" href="{{ url_for('map_page', tile_id=intel.tile_id) }}">
+                    <span>{{ tile_display_name(intel.tile_type) }} ({{ intel.x }}, {{ intel.y }})</span>
+                    <small>{{ intel.scouted_at[:16].replace('T', ' ') }}</small>
+                    <span class="intel-summary">{{ summary.defender_count }} defenders | Def {{ summary.defense }} | Loot {{ summary.loot }}</span>
+                </a>
+            {% else %}
+                <p class="muted compact-copy">No scouted tiles yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+<section class="panel spaced-panel compact-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Saved Targets</p>
+            <h2>Bookmarked Map Tiles</h2>
+        </div>
+        <a class="button-link secondary" href="{{ url_for('map_page') }}">Find Targets</a>
+    </div>
+    <div class="list-grid bookmark-grid">
+        {% for bookmark in bookmarks %}
+            {% set summary = bookmark_summaries[bookmark.tile_id] %}
+            <article class="bookmark-card">
+                <a href="{{ url_for('map_page', tile_id=bookmark.tile_id) }}">
+                    <strong>{{ tile_display_name(bookmark.tile_type) }} ({{ bookmark.x }}, {{ bookmark.y }})</strong>
+                    <small>Saved {{ bookmark.created_at[:16].replace('T', ' ') }}</small>
+                    {% if summary %}
+                        <span class="intel-summary">{{ summary.defender_count }} defenders | Def {{ summary.defense }} | Loot {{ summary.loot }}</span>
+                    {% else %}
+                        <span class="muted">Unscouted target</span>
+                    {% endif %}
+                </a>
+                <form method="post" action="{{ url_for('remove_tile_bookmark', tile_id=bookmark.tile_id) }}" class="inline-form">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button class="secondary compact" type="submit">Remove</button>
+                </form>
+            </article>
+        {% else %}
+            <p class="muted compact-copy">No bookmarks yet. Open the map and bookmark camps or resource tiles you want to revisit.</p>
+        {% endfor %}
+    </div>
+</section>
+</div>
+</div>
+
+<script>
+    (() => {
+        const timers = Array.from(document.querySelectorAll(".movement-item[data-finish-at]"));
+        if (!timers.length) return;
+        let reloadScheduled = false;
+        function formatRemaining(totalSeconds) {
+            const seconds = Math.max(totalSeconds, 0);
+            const minutes = Math.floor(seconds / 60);
+            const remainder = seconds % 60;
+            if (minutes <= 0) return `${remainder}s remaining`;
+            return `${minutes}m ${String(remainder).padStart(2, "0")}s remaining`;
+        }
+        function tick() {
+            const now = Date.now();
+            timers.forEach((item) => {
+                const label = item.querySelector(".movement-timer");
+                const finishAt = Date.parse(item.dataset.finishAt);
+                if (!label || Number.isNaN(finishAt)) return;
+                const remaining = Math.ceil((finishAt - now) / 1000);
+                if (remaining > 0) {
+                    label.textContent = formatRemaining(remaining);
+                    return;
+                }
+                label.textContent = "Resolving...";
+                if (!reloadScheduled) {
+                    reloadScheduled = true;
+                    window.setTimeout(() => window.location.reload(), 1200);
+                }
+            });
+        }
+        tick();
+        window.setInterval(tick, 1000);
+    })();
+</script>
+{% endblock %}

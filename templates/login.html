@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="auth-layout">
+    <section class="auth-story" aria-label="Welcome to Desert Houses">
+        <p class="eyebrow">Desert Houses / A strategy world</p>
+        <h1>The desert holds<br>your destiny.</h1>
+        <p>Build your settlement. Command your house.<br>Leave your mark on the sands.</p>
+        <div class="auth-story-footer"><span>Three houses. One desert.</span><span aria-hidden="true">01 — ∞</span></div>
+    </section>
+<section class="panel auth-panel">
+    <p class="eyebrow">Your house awaits</p>
+    <h2>Welcome back.</h2>
+    <p class="auth-intro muted">Enter your credentials to return to your settlement.</p>
+    <form method="post">
+        <label for="username">Username</label>
+        <input id="username" name="username" required autocomplete="username" placeholder="Your username">
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Your password">
+
+        <button type="submit">Enter the desert <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="muted">No account yet? <a href="{{ url_for('register') }}">Choose a house</a>.</p>
+</section>
+</div>
+{% endblock %}

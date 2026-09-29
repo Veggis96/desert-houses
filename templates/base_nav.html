@@ -1,0 +1,15 @@
+<aside class="base-sidebar">
+    <p class="eyebrow">Your settlement</p>
+    <nav class="base-tabs" aria-label="Base menu">
+        {% for item in base_nav %}
+            <a class="base-tab {% if active_base_tab == item.key %}active{% endif %} {% if item.locked %}locked{% endif %}" href="{{ url_for(item.endpoint) }}" {% if active_base_tab == item.key %}aria-current="page"{% endif %}>
+                <span>{{ item.label }}</span>
+                {% if item.level is not none %}
+                    <small>{% if item.locked %}Not built{% else %}Level {{ item.level }}{% endif %}</small>
+                {% else %}
+                    <small>{{ item.hint }}</small>
+                {% endif %}
+            </a>
+        {% endfor %}
+    </nav>
+</aside>

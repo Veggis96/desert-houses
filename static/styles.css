@@ -1,0 +1,2888 @@
+:root {
+    color-scheme: dark;
+    --bg: #17110c;
+    --panel: #24180f;
+    --panel-soft: #302015;
+    --text: #f6e3c3;
+    --muted: #b99d75;
+    --line: #51351f;
+    --accent: #d59a3a;
+    --danger: #d06345;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #3a2514 0, var(--bg) 42rem);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.topbar {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem clamp(1rem, 2.5vw, 2.5rem);
+}
+
+.brand {
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.nav-badge {
+    background: var(--accent);
+    border-radius: 999px;
+    color: #1a0f08;
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    min-width: 1.2rem;
+    padding: 0.18rem 0.38rem;
+    text-align: center;
+}
+
+.page {
+    margin: 0 auto;
+    max-width: 1680px;
+    padding: 2rem clamp(1rem, 2.5vw, 2.5rem) 4rem;
+}
+
+.base-layout {
+    align-items: start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.base-sidebar {
+    background: color-mix(in srgb, var(--panel) 88%, black);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 0.9rem;
+    position: sticky;
+    top: 1rem;
+}
+
+.base-tabs {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.base-tab {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--text);
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.75rem 0.8rem;
+}
+
+.base-tab.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.base-tab.locked {
+    opacity: 0.62;
+}
+
+.base-tab span {
+    font-weight: 800;
+}
+
+.base-main {
+    min-width: 0;
+}
+
+.hero,
+.panel,
+.messages,
+.warning {
+    background: color-mix(in srgb, var(--panel) 88%, black);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    padding: 1.15rem;
+}
+
+.hero {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.hero h1,
+.panel h1,
+.panel h2,
+.building-card h3 {
+    margin: 0;
+}
+
+.eyebrow {
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+}
+
+.muted,
+small {
+    color: var(--muted);
+}
+
+.capacity {
+    background: var(--panel-soft);
+    border-radius: 999px;
+    padding: 0.55rem 0.85rem;
+}
+
+.stat-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    justify-content: flex-end;
+}
+
+.resource-grid,
+.building-grid,
+.faction-list,
+.list-grid,
+.two-column {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.resource-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-bottom: 1rem;
+}
+
+.dashboard-alerts {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    margin-bottom: 1rem;
+}
+
+.dashboard-alert {
+    background: color-mix(in srgb, var(--panel-soft) 88%, black);
+    border: 1px solid rgba(213, 154, 58, 0.2);
+    border-radius: 14px;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.75rem;
+}
+
+.dashboard-alert strong {
+    color: var(--text);
+}
+
+.dashboard-alert span {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.dashboard-alert.warning {
+    border-color: rgba(213, 154, 58, 0.42);
+}
+
+.dashboard-alert.danger {
+    border-color: rgba(208, 99, 69, 0.48);
+}
+
+.dashboard-alert.info {
+    border-color: rgba(116, 201, 234, 0.28);
+}
+
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.quick-actions a {
+    background: rgba(29, 19, 12, 0.92);
+    border: 1px solid rgba(213, 154, 58, 0.18);
+    border-radius: 999px;
+    color: var(--text);
+    font-weight: 800;
+    padding: 0.48rem 0.75rem;
+}
+
+.quick-actions a:hover {
+    border-color: var(--accent);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    transform: translateY(-1px);
+}
+
+.resource-card,
+.building-card,
+.faction-card {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 0.8rem;
+}
+
+.resource-card strong {
+    display: block;
+    font-size: 1.55rem;
+    margin: 0.2rem 0;
+}
+
+.resource-trend {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 0.18rem;
+}
+
+.resource-trend.positive { color: #d7bd7b; }
+.resource-trend.negative { color: #f0a184; }
+.resource-trend.stable { color: var(--muted); }
+
+.progress-track {
+    background: rgba(18, 10, 5, 0.78);
+    border: 1px solid rgba(213, 154, 58, 0.18);
+    border-radius: 999px;
+    height: 0.55rem;
+    overflow: hidden;
+}
+
+.progress-track.waiting {
+    opacity: 0.58;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #9f6225, #efbd60);
+    border-radius: inherit;
+    box-shadow: 0 0 18px rgba(213, 154, 58, 0.32);
+    display: block;
+    height: 100%;
+    transition: width 260ms ease;
+    width: 0%;
+}
+
+.progress-track.complete .progress-fill {
+    background: linear-gradient(90deg, #6f9f4b, #d7e68b);
+}
+
+.water strong {
+    color: #74b6d6;
+}
+
+.spice strong {
+    color: #e58c45;
+}
+
+.section-heading {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+}
+
+.building-grid {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.building-card {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.building-card p {
+    margin: 0.25rem 0;
+}
+
+.village-panel {
+    overflow: hidden;
+}
+
+.village-view {
+    align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.village-map {
+    background:
+        linear-gradient(rgba(37, 21, 11, 0.14), rgba(37, 21, 11, 0.28)),
+        url("/static/images/base/sietch-background.svg") center / cover no-repeat,
+        radial-gradient(circle at 50% 48%, rgba(213, 154, 58, 0.18), transparent 34%),
+        radial-gradient(circle at 12% 22%, rgba(95, 57, 27, 0.55), transparent 18%),
+        linear-gradient(145deg, #7f5528 0%, #b98239 42%, #5b351a 100%);
+    border: 1px solid #6b4525;
+    border-radius: 18px;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-areas:
+        "iron_mine dew_field command_center spice_field"
+        "iron_mine windtrap command_center spice_field"
+        "wood_yard warehouse barracks embassy"
+        "wood_yard large_windtrap research_center influence_sanctuary"
+        "deathstill large_windtrap research_center influence_sanctuary";
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    min-height: 560px;
+    padding: 1rem;
+    position: relative;
+}
+
+.village-map::before {
+    background:
+        linear-gradient(24deg, transparent 0 46%, rgba(255, 229, 157, 0.18) 47% 49%, transparent 50%),
+        linear-gradient(156deg, transparent 0 48%, rgba(65, 37, 18, 0.28) 49% 51%, transparent 52%);
+    content: "";
+    inset: 0;
+    opacity: 0.55;
+    pointer-events: none;
+    position: absolute;
+}
+
+.building-spot {
+    align-items: end;
+    background:
+        radial-gradient(ellipse at 50% 82%, rgba(31, 18, 9, 0.72), transparent 36%),
+        linear-gradient(180deg, rgba(31, 18, 9, 0.02), rgba(31, 18, 9, 0.28));
+    border: 1px solid rgba(95, 58, 30, 0.22);
+    border-radius: 22px;
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    gap: 0.25rem;
+    justify-items: center;
+    min-height: 116px;
+    overflow: hidden;
+    padding: 0.55rem;
+    position: relative;
+    text-align: center;
+}
+
+.field-spot {
+    align-items: end;
+    background:
+        radial-gradient(ellipse at 50% 82%, rgba(31, 18, 9, 0.58), transparent 38%),
+        linear-gradient(180deg, rgba(31, 18, 9, 0.02), rgba(31, 18, 9, 0.18));
+    border: 1px solid rgba(95, 58, 30, 0.18);
+    border-radius: 50%;
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    gap: 0.25rem;
+    justify-items: center;
+    min-height: 132px;
+    overflow: hidden;
+    padding: 0.7rem;
+    position: relative;
+    text-align: center;
+}
+
+.building-spot:hover,
+.building-spot:focus,
+.building-spot.active,
+.field-spot:hover,
+.field-spot:focus,
+.field-spot.active {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(246, 202, 119, 0.45), 0 10px 26px rgba(0, 0, 0, 0.25);
+    outline: none;
+}
+
+.building-spot.foundation,
+.field-spot.foundation {
+    filter: grayscale(0.45);
+    opacity: 0.72;
+}
+
+.building-art {
+    align-self: center;
+    display: block;
+    height: 82px;
+    position: relative;
+    width: min(132px, 92%);
+    z-index: 1;
+}
+
+.building-art img {
+    display: block;
+    filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.38));
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
+.building-art.asset-art::before,
+.building-art.asset-art::after {
+    display: none;
+}
+
+.building-art::before,
+.building-art::after {
+    content: "";
+    position: absolute;
+}
+
+.building-label {
+    background: rgba(25, 15, 8, 0.72);
+    border: 1px solid rgba(213, 154, 58, 0.2);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.1;
+    padding: 0.25rem 0.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.level-badge,
+.queue-badge {
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.18rem 0.45rem;
+    position: absolute;
+    z-index: 3;
+}
+
+.level-badge {
+    background: rgba(25, 15, 8, 0.78);
+    right: 0.45rem;
+    top: 0.45rem;
+}
+
+.queue-badge {
+    background: var(--accent);
+    color: #1a0f08;
+    left: 0.45rem;
+    top: 0.45rem;
+}
+
+.queue-state {
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    justify-self: start;
+    padding: 0.2rem 0.5rem;
+    text-transform: uppercase;
+}
+
+.queue-state.active {
+    background: var(--accent);
+    color: #1a0f08;
+}
+
+.queue-state.waiting {
+    background: rgba(29, 19, 12, 0.9);
+    color: var(--muted);
+}
+
+.mission-state {
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    justify-self: start;
+    padding: 0.2rem 0.5rem;
+    text-transform: uppercase;
+}
+
+.mission-state.outbound {
+    background: rgba(116, 201, 234, 0.16);
+    border: 1px solid rgba(116, 201, 234, 0.34);
+    color: #a8e4f6;
+}
+
+.mission-state.returning {
+    background: rgba(213, 154, 58, 0.16);
+    border: 1px solid rgba(213, 154, 58, 0.36);
+    color: #f2ca83;
+}
+
+.building-detail {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    display: none;
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.building-detail.active {
+    display: grid;
+}
+
+.detail-art {
+    align-items: center;
+    background:
+        radial-gradient(circle at 50% 70%, rgba(213, 154, 58, 0.18), transparent 54%),
+        linear-gradient(180deg, rgba(255, 226, 170, 0.05), rgba(0, 0, 0, 0.12));
+    border: 1px solid rgba(213, 154, 58, 0.18);
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    min-height: 132px;
+    overflow: hidden;
+}
+
+.detail-art img {
+    filter: drop-shadow(0 18px 16px rgba(0, 0, 0, 0.45)) saturate(1.08) contrast(1.04);
+    height: 120px;
+    object-fit: contain;
+    width: min(180px, 86%);
+}
+
+.village-detail-stack {
+    min-width: 0;
+}
+
+.building-spot.iron_mine { grid-area: iron_mine; }
+.building-spot.wood_yard { grid-area: wood_yard; }
+.building-spot.dew_field { grid-area: dew_field; }
+.building-spot.spice_field { grid-area: spice_field; }
+.building-spot.warehouse { grid-area: warehouse; }
+.building-spot.windtrap { grid-area: windtrap; }
+.building-spot.large_windtrap { grid-area: large_windtrap; }
+.building-spot.embassy { grid-area: embassy; }
+.building-spot.barracks { grid-area: barracks; }
+.building-spot.command_center { grid-area: command_center; }
+.building-spot.research_center { grid-area: research_center; }
+.building-spot.deathstill { grid-area: deathstill; }
+.building-spot.influence_sanctuary { grid-area: influence_sanctuary; }
+
+.fields-view {
+    grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.fields-map {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(64, 106, 96, 0.28) 0 8%, transparent 9%),
+        radial-gradient(circle at 50% 50%, rgba(244, 209, 132, 0.26) 0 24%, transparent 25%),
+        url("/static/images/base/sietch-background.svg") center / cover no-repeat,
+        linear-gradient(145deg, #9d6b31, #d0a45b 48%, #5b351a);
+    border: 1px solid #6b4525;
+    border-radius: 18px;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-areas:
+        "iron_mine desert_top desert_top spice_field"
+        "iron_mine dew_field windtrap spice_field"
+        "wood_yard dew_field windtrap large_windtrap"
+        "wood_yard desert_bottom desert_bottom large_windtrap";
+    grid-template-columns: repeat(4, minmax(135px, 1fr));
+    min-height: 560px;
+    padding: 1rem;
+    position: relative;
+}
+
+.fields-map::before {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(40, 91, 103, 0.48) 0 7%, transparent 8%),
+        linear-gradient(32deg, transparent 0 47%, rgba(255, 239, 188, 0.22) 48% 50%, transparent 51%),
+        linear-gradient(148deg, transparent 0 47%, rgba(69, 40, 20, 0.2) 48% 50%, transparent 51%);
+    content: "";
+    inset: 0;
+    opacity: 0.72;
+    pointer-events: none;
+    position: absolute;
+}
+
+.fields-map::after {
+    align-items: center;
+    background: rgba(31, 18, 9, 0.5);
+    border: 1px solid rgba(213, 154, 58, 0.35);
+    border-radius: 999px;
+    color: var(--muted);
+    content: "Field Basin";
+    display: flex;
+    font-size: 0.8rem;
+    font-weight: 800;
+    grid-column: 2 / 4;
+    grid-row: 2 / 4;
+    justify-content: center;
+    margin: auto;
+    min-height: 74px;
+    min-width: 180px;
+    pointer-events: none;
+    position: relative;
+    z-index: 1;
+}
+
+.field-spot {
+    z-index: 2;
+}
+
+.field-spot.iron_mine { grid-area: iron_mine; }
+.field-spot.wood_yard { grid-area: wood_yard; }
+.field-spot.dew_field { grid-area: dew_field; }
+.field-spot.spice_field { grid-area: spice_field; }
+.field-spot.windtrap { grid-area: windtrap; }
+.field-spot.large_windtrap { grid-area: large_windtrap; }
+
+.field-spot.iron_mine {
+    border-radius: 32% 46% 38% 45%;
+}
+
+.field-spot.wood_yard {
+    border-radius: 46% 36% 48% 34%;
+}
+
+.field-spot.dew_field,
+.field-spot.spice_field {
+    border-radius: 42%;
+}
+
+.field-spot.windtrap,
+.field-spot.large_windtrap {
+    border-radius: 44% 44% 30% 30%;
+}
+
+.scene-art-map {
+    background:
+        linear-gradient(rgba(37, 21, 11, 0.1), rgba(37, 21, 11, 0.22)),
+        var(--scene-image) center / cover no-repeat,
+        linear-gradient(145deg, #9d6b31, #d0a45b 48%, #5b351a);
+    display: block;
+    overflow: hidden;
+    position: relative;
+}
+
+.scene-art-map::before,
+.scene-art-map::after {
+    display: none;
+}
+
+.village-scene-map {
+    aspect-ratio: 1672 / 941;
+    min-height: 0;
+}
+
+.fields-scene-map {
+    aspect-ratio: 1448 / 1086;
+    min-height: 0;
+}
+
+.scene-art-map .building-spot,
+.scene-art-map .field-spot {
+    background: rgba(25, 15, 8, 0.16);
+    border: 1px solid rgba(246, 202, 119, 0.16);
+    min-height: 0;
+    padding: 0.4rem;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.scene-art-map .building-spot:hover,
+.scene-art-map .building-spot:focus,
+.scene-art-map .building-spot.active,
+.scene-art-map .field-spot:hover,
+.scene-art-map .field-spot:focus,
+.scene-art-map .field-spot.active {
+    background: rgba(25, 15, 8, 0.32);
+}
+
+.scene-art-map .building-art {
+    height: 54px;
+    width: min(88px, 80%);
+}
+
+.fields-scene-map .building-art {
+    display: none;
+}
+
+.scene-art-map .building-label {
+    font-size: clamp(0.62rem, 0.8vw, 0.78rem);
+    padding: 0.18rem 0.42rem;
+}
+
+.scene-art-map .level-badge,
+.scene-art-map .queue-badge {
+    font-size: 0.62rem;
+    padding: 0.14rem 0.36rem;
+}
+
+.fields-scene-map .field-spot {
+    border-radius: 999px;
+    height: 18%;
+    width: 22%;
+}
+
+.fields-scene-map .field-spot.wood_yard {
+    left: 50%;
+    top: 17%;
+}
+
+.fields-scene-map .field-spot.iron_mine {
+    left: 78%;
+    top: 45%;
+}
+
+.fields-scene-map .field-spot.spice_field {
+    left: 22%;
+    top: 45%;
+}
+
+.fields-scene-map .field-spot.dew_field {
+    left: 50%;
+    top: 78%;
+}
+
+.fields-scene-map .field-spot.windtrap {
+    height: 14%;
+    left: 62%;
+    top: 55%;
+    width: 15%;
+}
+
+.fields-scene-map .field-spot.large_windtrap {
+    height: 16%;
+    left: 72%;
+    top: 66%;
+    width: 17%;
+}
+
+.village-scene-map .building-spot {
+    border-radius: 20px;
+    height: 22%;
+    width: 16%;
+}
+
+.village-scene-map .building-spot.warehouse {
+    left: 48%;
+    top: 50%;
+}
+
+.village-scene-map .building-spot.command_center {
+    left: 52%;
+    top: 32%;
+}
+
+.village-scene-map .building-spot.barracks {
+    left: 35%;
+    top: 58%;
+}
+
+.village-scene-map .building-spot.embassy {
+    left: 65%;
+    top: 56%;
+}
+
+.village-scene-map .building-spot.research_center {
+    left: 58%;
+    top: 72%;
+}
+
+.village-scene-map .building-spot.deathstill {
+    left: 29%;
+    top: 75%;
+}
+
+.village-scene-map .building-spot.influence_sanctuary {
+    left: 75%;
+    top: 72%;
+}
+
+.base-plot-map {
+    isolation: isolate;
+}
+
+.base-plot-map::before,
+.base-plot-map::after {
+    content: "";
+    display: block;
+    pointer-events: none;
+    position: absolute;
+    z-index: 1;
+}
+
+.base-plot-map::before {
+    border: 3px solid rgba(126, 68, 28, 0.5);
+    border-radius: 50%;
+    box-shadow:
+        inset 0 0 0 2px rgba(255, 229, 171, 0.16),
+        inset 0 18px 38px rgba(255, 225, 150, 0.08),
+        0 10px 28px rgba(32, 18, 8, 0.24);
+    height: 76%;
+    left: 50%;
+    top: 51%;
+    transform: translate(-50%, -50%);
+    width: 82%;
+}
+
+.base-plot-map::after {
+    background:
+        radial-gradient(ellipse at 50% 50%, transparent 0 21%, rgba(241, 202, 129, 0.2) 21.4% 22.2%, transparent 22.8% 100%),
+        linear-gradient(90deg, transparent 0 48.8%, rgba(241, 202, 129, 0.12) 49.4% 50.6%, transparent 51.2% 100%),
+        linear-gradient(0deg, transparent 0 48.8%, rgba(241, 202, 129, 0.12) 49.4% 50.6%, transparent 51.2% 100%);
+    border-radius: 50%;
+    height: 64%;
+    left: 50%;
+    opacity: 0.48;
+    top: 52%;
+    transform: translate(-50%, -50%);
+    width: 68%;
+}
+
+.base-plot-map .base-plot {
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    box-shadow: none;
+    height: 24%;
+    padding: 0;
+    width: 15%;
+    z-index: 4;
+}
+
+.base-plot-map .base-plot:hover,
+.base-plot-map .base-plot:focus,
+.base-plot-map .base-plot.active {
+    background: transparent;
+}
+
+.base-plot-map .base-plot:hover .plot-foundation,
+.base-plot-map .base-plot:focus .plot-foundation,
+.base-plot-map .base-plot.active .plot-foundation {
+    filter: brightness(1.12) drop-shadow(0 0 18px rgba(246, 202, 119, 0.42));
+}
+
+.base-plot-map .plot-foundation,
+.base-plot-map .base-building-art {
+    display: block;
+    inset: 50% auto auto 50%;
+    pointer-events: none;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.base-plot-map .plot-foundation {
+    height: 118%;
+    opacity: 0.88;
+    transition: filter 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+    width: 118%;
+    z-index: 1;
+}
+
+.base-plot-map .base-building-art {
+    height: 124%;
+    width: 124%;
+    z-index: 2;
+}
+
+.base-plot-map .plot-foundation img,
+.base-plot-map .base-building-art img {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
+.base-plot-map .empty-plot .plot-foundation {
+    opacity: 0.54;
+}
+
+.base-plot-map .building-label,
+.base-plot-map .level-badge,
+.base-plot-map .queue-badge {
+    z-index: 3;
+}
+
+.base-plot-map .building-label {
+    bottom: -5%;
+    left: 50%;
+    opacity: 0;
+    position: absolute;
+    transform: translateX(-50%);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    white-space: nowrap;
+}
+
+.base-plot-map .base-plot:hover .building-label,
+.base-plot-map .base-plot:focus .building-label,
+.base-plot-map .base-plot.active .building-label {
+    opacity: 1;
+    transform: translate(-50%, -4px);
+}
+
+.base-plot-map .level-badge {
+    align-items: center;
+    background: radial-gradient(circle at 35% 30%, #fff9df, #f3d170 58%, #b46d22);
+    border: 2px solid rgba(88, 46, 17, 0.78);
+    border-radius: 999px;
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.54);
+    color: #3b210d;
+    display: flex;
+    font-size: 0.7rem;
+    font-weight: 900;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    position: absolute;
+    right: 5%;
+    text-shadow: 0 1px 0 rgba(255, 250, 224, 0.6);
+    top: 5%;
+    width: 2rem;
+}
+
+.base-plot-map .queue-badge {
+    left: 7%;
+    position: absolute;
+    top: 9%;
+}
+
+.base-plot-map .slot-center {
+    height: 36%;
+    left: 50%;
+    top: 50%;
+    width: 23%;
+    z-index: 7;
+}
+
+.base-plot-map .slot-center .plot-foundation {
+    height: 132%;
+    width: 132%;
+}
+
+.base-plot-map .slot-center .base-building-art {
+    height: 138%;
+    width: 138%;
+}
+
+.base-plot-map .slot-north {
+    left: 50%;
+    top: 19%;
+    z-index: 4;
+}
+
+.base-plot-map .slot-north_east {
+    left: 66%;
+    top: 29%;
+    z-index: 4;
+}
+
+.base-plot-map .slot-east {
+    left: 72%;
+    top: 51%;
+    z-index: 6;
+}
+
+.base-plot-map .slot-south_east {
+    left: 64%;
+    top: 71%;
+    z-index: 8;
+}
+
+.base-plot-map .slot-south {
+    left: 50%;
+    top: 76%;
+    z-index: 9;
+}
+
+.base-plot-map .slot-south_west {
+    left: 36%;
+    top: 71%;
+    z-index: 8;
+}
+
+.base-plot-map .slot-west {
+    left: 28%;
+    top: 51%;
+    z-index: 6;
+}
+
+.base-plot-map .slot-north_west {
+    left: 34%;
+    top: 29%;
+    z-index: 4;
+}
+
+.iron_mine .building-art::before {
+    background: linear-gradient(145deg, #2c2926, #77706a);
+    clip-path: polygon(8% 100%, 24% 42%, 43% 10%, 62% 48%, 82% 18%, 96% 100%);
+    inset: 14% 2% 8%;
+}
+
+.iron_mine .building-art::after {
+    background: #17120f;
+    border-radius: 50%;
+    bottom: 0;
+    height: 20px;
+    left: 14px;
+    width: 50px;
+}
+
+.wood_yard .building-art::before,
+.dew_field .building-art::before,
+.spice_field .building-art::before {
+    border-radius: 50%;
+    inset: 10px 4px 6px;
+}
+
+.wood_yard .building-art::before {
+    background: radial-gradient(circle at 35% 35%, #405c22 0 24%, transparent 25%), radial-gradient(circle at 62% 38%, #30491a 0 22%, transparent 23%), linear-gradient(#6b4725, #332010);
+}
+
+.wood_yard .building-art::after {
+    background: #7a552c;
+    border-radius: 4px;
+    bottom: 8px;
+    height: 34px;
+    left: 34px;
+    transform: rotate(8deg);
+    width: 10px;
+}
+
+.dew_field .building-art::before {
+    background: repeating-linear-gradient(90deg, rgba(115, 184, 215, 0.85) 0 6px, rgba(29, 79, 95, 0.9) 7px 12px);
+    border: 2px solid #7fc7df;
+    transform: skewX(-12deg);
+}
+
+.spice_field .building-art::before {
+    background: radial-gradient(circle at center, #f4a14a 0 22%, #8d421d 23% 42%, transparent 43%), linear-gradient(135deg, #703718, #2a1309);
+    box-shadow: 0 0 18px rgba(229, 140, 69, 0.45);
+}
+
+.warehouse .building-art::before,
+.barracks .building-art::before,
+.command_center .building-art::before,
+.research_center .building-art::before,
+.embassy .building-art::before,
+.influence_sanctuary .building-art::before,
+.deathstill .building-art::before {
+    background: linear-gradient(145deg, #8f6030, #3b2414);
+    border: 2px solid rgba(246, 211, 151, 0.45);
+    border-radius: 46% 46% 18% 18%;
+    bottom: 6px;
+    height: 42px;
+    left: 10px;
+    width: 58px;
+}
+
+.warehouse .building-art::after {
+    background: repeating-linear-gradient(90deg, #2c1a0f 0 6px, #6c4526 7px 12px);
+    bottom: 9px;
+    height: 18px;
+    left: 22px;
+    width: 34px;
+}
+
+.windtrap .building-art::before,
+.large_windtrap .building-art::before {
+    background: linear-gradient(#b7d6d9, #55737c);
+    border-radius: 999px 999px 8px 8px;
+    bottom: 4px;
+    height: 52px;
+    left: 32px;
+    width: 14px;
+}
+
+.windtrap .building-art::after,
+.large_windtrap .building-art::after {
+    border: 3px solid #a8d7dc;
+    border-radius: 50%;
+    height: 30px;
+    left: 21px;
+    top: 4px;
+    width: 34px;
+}
+
+.large_windtrap .building-art::before {
+    box-shadow: -18px 10px 0 -2px #6f9199, 18px 10px 0 -2px #6f9199;
+}
+
+.embassy .building-art::before {
+    background: linear-gradient(145deg, #b9813a, #4a2d17);
+}
+
+.embassy .building-art::after {
+    background: #f3c96e;
+    border-radius: 50%;
+    height: 20px;
+    left: 29px;
+    top: 8px;
+    width: 20px;
+}
+
+.barracks .building-art::before {
+    background: linear-gradient(145deg, #695139, #281813);
+}
+
+.barracks .building-art::after {
+    background: #c45d36;
+    clip-path: polygon(50% 0, 64% 36%, 100% 40%, 70% 60%, 82% 100%, 50% 74%, 18% 100%, 30% 60%, 0 40%, 36% 36%);
+    height: 24px;
+    left: 27px;
+    top: 14px;
+    width: 24px;
+}
+
+.command_center .building-art::before {
+    background: radial-gradient(circle at 50% 30%, #e2ad55 0 16%, transparent 17%), linear-gradient(145deg, #7f5528, #2b190f);
+    height: 54px;
+}
+
+.command_center .building-art::after {
+    background: #f2d28b;
+    border-radius: 2px;
+    height: 34px;
+    left: 36px;
+    top: 4px;
+    width: 6px;
+}
+
+.research_center .building-art::before {
+    background: linear-gradient(145deg, #4b6170, #261b19);
+}
+
+.research_center .building-art::after {
+    border: 3px solid #98d4e2;
+    border-radius: 50%;
+    height: 24px;
+    left: 26px;
+    top: 10px;
+    width: 24px;
+}
+
+.deathstill .building-art::before {
+    background: linear-gradient(145deg, #3a2d27, #120c08);
+    border-color: rgba(116, 182, 214, 0.35);
+}
+
+.deathstill .building-art::after {
+    background: #74b6d6;
+    border-radius: 50% 50% 50% 0;
+    height: 18px;
+    left: 30px;
+    top: 20px;
+    transform: rotate(-45deg);
+    width: 18px;
+}
+
+.influence_sanctuary .building-art::before {
+    background: linear-gradient(145deg, #695081, #281427);
+    border-color: rgba(219, 178, 255, 0.42);
+}
+
+.influence_sanctuary .building-art::after {
+    border: 2px solid #d8b0ff;
+    border-radius: 50%;
+    height: 26px;
+    left: 26px;
+    top: 14px;
+    width: 26px;
+}
+
+.spaced-panel {
+    margin-bottom: 1rem;
+}
+
+.compact-panel {
+    padding: 0.85rem 1rem;
+}
+
+.compact-panel .section-heading {
+    margin-bottom: 0.45rem;
+}
+
+.compact-panel h2 {
+    font-size: 1.15rem;
+}
+
+.compact-panel .list-grid {
+    gap: 0.45rem;
+}
+
+.compact-panel .building-card {
+    padding: 0.65rem 0.75rem;
+}
+
+.compact-copy {
+    margin: 0.3rem 0;
+}
+
+.button-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.button-row form {
+    display: block;
+}
+
+.cost-list {
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.cost-list span {
+    background: #1d130c;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.mission-list {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.mission-list span {
+    background: rgba(213, 154, 58, 0.1);
+    border: 1px solid rgba(213, 154, 58, 0.24);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 0.9rem;
+    padding: 0.55rem 0.65rem;
+}
+
+.requirement-list {
+    color: #f0b18f;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.requirement-list span {
+    background: rgba(208, 99, 69, 0.12);
+    border: 1px solid rgba(208, 99, 69, 0.3);
+    border-radius: 999px;
+    font-size: 0.84rem;
+    padding: 0.24rem 0.5rem;
+}
+
+.auth-panel {
+    margin: 3rem auto 0;
+    max-width: 520px;
+}
+
+form {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.inline-form {
+    display: inline-flex;
+    gap: 0.5rem;
+}
+
+input {
+    background: #120c08;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 0.65rem;
+}
+
+button {
+    background: var(--accent);
+    border: 0;
+    border-radius: 999px;
+    color: #180f09;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.65rem 0.9rem;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    filter: grayscale(1);
+    opacity: 0.45;
+}
+
+button.secondary {
+    background: #5d4430;
+    color: var(--text);
+}
+
+button.compact {
+    padding: 0.45rem 0.7rem;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    border-bottom: 1px solid var(--line);
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+}
+
+th {
+    color: var(--accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.compact-table th,
+.compact-table td {
+    font-size: 0.82rem;
+    padding: 0.45rem 0.3rem;
+}
+
+.wide-form {
+    max-width: 640px;
+}
+
+.faction-card {
+    cursor: pointer;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.warning {
+    border-color: var(--danger);
+    color: #ffd3c4;
+    margin-bottom: 1.5rem;
+}
+
+.danger-panel {
+    border-color: var(--danger);
+}
+
+.tab-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.tab-row a,
+.button-link {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text);
+    display: inline-block;
+    font-weight: 700;
+    padding: 0.6rem 0.85rem;
+}
+
+textarea {
+    background: #120c08;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    min-height: 9rem;
+    padding: 0.8rem;
+    resize: vertical;
+}
+
+button.danger {
+    background: var(--danger);
+    color: #fff4ee;
+}
+
+.post-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.post-card {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.post-card header {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.post-card p {
+    white-space: pre-wrap;
+}
+
+.report-card.unread {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.report-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.report-filter {
+    align-items: center;
+    background: rgba(29, 19, 12, 0.92);
+    border: 1px solid rgba(213, 154, 58, 0.18);
+    border-radius: 999px;
+    color: var(--muted);
+    display: flex;
+    gap: 0.45rem;
+    padding: 0.42rem 0.65rem;
+}
+
+.report-filter strong {
+    background: rgba(213, 154, 58, 0.16);
+    border-radius: 999px;
+    color: var(--text);
+    min-width: 1.5rem;
+    padding: 0.12rem 0.38rem;
+    text-align: center;
+}
+
+.report-filter.active {
+    border-color: var(--accent);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px rgba(213, 154, 58, 0.25);
+}
+
+.report-card-main {
+    align-items: start;
+    display: flex;
+    gap: 0.8rem;
+}
+
+.report-icon {
+    align-items: center;
+    background: linear-gradient(180deg, rgba(213, 154, 58, 0.28), rgba(213, 154, 58, 0.08));
+    border: 1px solid rgba(213, 154, 58, 0.32);
+    border-radius: 14px;
+    color: var(--text);
+    display: flex;
+    flex: 0 0 2.5rem;
+    font-weight: 900;
+    height: 2.5rem;
+    justify-content: center;
+    letter-spacing: 0.08em;
+}
+
+.report-card.scout .report-icon {
+    background: linear-gradient(180deg, rgba(116, 201, 234, 0.24), rgba(116, 201, 234, 0.06));
+    border-color: rgba(116, 201, 234, 0.3);
+}
+
+.report-card.raid .report-icon {
+    background: linear-gradient(180deg, rgba(208, 99, 69, 0.24), rgba(208, 99, 69, 0.06));
+    border-color: rgba(208, 99, 69, 0.3);
+}
+
+.latest-report-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.latest-report-card {
+    background: color-mix(in srgb, var(--panel-soft) 92%, black);
+    border: 1px solid rgba(213, 154, 58, 0.18);
+    border-radius: 14px;
+    color: var(--text);
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.75rem;
+}
+
+.latest-report-card.unread {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(213, 154, 58, 0.25);
+}
+
+.latest-report-card:hover {
+    border-color: rgba(213, 154, 58, 0.42);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+.command-stats {
+    margin-bottom: 1rem;
+}
+
+.command-list .building-card {
+    border-left: 3px solid rgba(116, 201, 234, 0.38);
+}
+
+.command-list .building-card:has(.mission-state.returning) {
+    border-left-color: rgba(213, 154, 58, 0.5);
+}
+
+.report-mini-type {
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    justify-self: start;
+    padding: 0.16rem 0.45rem;
+    text-transform: uppercase;
+}
+
+.report-mini-type.scout {
+    background: rgba(116, 201, 234, 0.16);
+    color: #a8e4f6;
+}
+
+.report-mini-type.raid {
+    background: rgba(208, 99, 69, 0.16);
+    color: #f0a184;
+}
+
+.messages {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.map-layout {
+    align-items: start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    margin-bottom: 1rem;
+}
+
+.map-jump-panel {
+    margin-bottom: 1rem;
+}
+
+.map-jump-form {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.map-jump-form label {
+    color: var(--muted);
+    display: grid;
+    font-size: 0.78rem;
+    font-weight: 800;
+    gap: 0.2rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.map-jump-form input {
+    max-width: 6rem;
+    padding: 0.45rem 0.55rem;
+}
+
+.map-panel {
+    background:
+        linear-gradient(180deg, rgba(255, 239, 184, 0.08), rgba(66, 41, 18, 0.08)),
+        #c99b55;
+    border-color: rgba(79, 52, 24, 0.46);
+    cursor: grab;
+    max-height: 78vh;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0.8rem;
+    scrollbar-color: rgba(213, 154, 58, 0.75) rgba(29, 19, 12, 0.65);
+    user-select: none;
+}
+
+.map-panel.dragging {
+    cursor: grabbing;
+}
+
+.map-panel.dragging .map-tile {
+    background-image: none !important;
+    box-shadow: none !important;
+    transition: none;
+}
+
+.map-panel.dragging .map-tile::before,
+.map-panel.dragging .map-tile::after {
+    display: none;
+}
+
+.map-panel.dragging .map-tile.desert { background: #9b6c34; }
+.map-panel.dragging .map-tile.player_base { background: #c58b35; }
+.map-panel.dragging .map-tile.npc_camp { background: #763022; }
+.map-panel.dragging .map-tile.spice_oasis { background: #a94e22; }
+.map-panel.dragging .map-tile.water_oasis { background: #246f85; }
+.map-panel.dragging .map-tile.iron_outcrop { background: #5c5750; }
+.map-panel.dragging .map-tile.scrap_field { background: #526329; }
+
+.map-panel.dragging .map-tile span {
+    opacity: 0;
+    transition: none;
+}
+
+.map-panel.dragging .map-tile.dimmed,
+.map-panel.dragging .map-tile:hover,
+.map-panel.dragging .map-tile:focus,
+.map-panel.dragging .map-tile.selected {
+    filter: none;
+    transform: none;
+}
+
+.map-header-strip {
+    align-items: center;
+    color: var(--muted);
+    display: flex;
+    font-size: 0.74rem;
+    font-weight: 900;
+    justify-content: space-between;
+    letter-spacing: 0.16em;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+.map-header-strip span:last-child {
+    align-items: center;
+    border: 1px solid rgba(213, 154, 58, 0.32);
+    border-radius: 999px;
+    color: var(--accent);
+    display: inline-flex;
+    height: 1.8rem;
+    justify-content: center;
+    width: 1.8rem;
+}
+
+.map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
+}
+
+.map-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.45rem;
+}
+
+.map-zoom-controls {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.55rem;
+}
+
+.map-zoom-controls span {
+    color: var(--muted);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.map-filters button,
+.map-zoom-controls button {
+    background: rgba(29, 19, 12, 0.9);
+    border-color: rgba(213, 154, 58, 0.18);
+    color: var(--muted);
+}
+
+.map-filters button.active,
+.map-zoom-controls button.active {
+    background: linear-gradient(180deg, rgba(213, 154, 58, 0.32), rgba(213, 154, 58, 0.12));
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.map-legend span {
+    align-items: center;
+    color: var(--muted);
+    display: inline-flex;
+    font-size: 0.85rem;
+    gap: 0.35rem;
+}
+
+.legend-tile {
+    border: 1px solid #5b3c22;
+    border-radius: 5px;
+    display: inline-block;
+    height: 18px;
+    position: relative;
+    width: 18px;
+}
+
+.map-grid {
+    background:
+        linear-gradient(90deg, rgba(255, 226, 170, 0.035) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255, 226, 170, 0.035) 1px, transparent 1px),
+        linear-gradient(rgba(18, 11, 6, 0.18), rgba(18, 11, 6, 0.42)),
+        url("/static/images/Realistic sand dunes.png") center / cover no-repeat,
+        radial-gradient(circle at 50% 50%, rgba(213, 154, 58, 0.1), transparent 44%),
+        #120b06;
+    background-size: 28px 28px, 28px 28px, auto, cover, auto, auto;
+    border: 1px solid rgba(213, 154, 58, 0.22);
+    border-radius: 18px;
+    box-shadow: inset 0 0 42px rgba(0, 0, 0, 0.46), 0 18px 50px rgba(0, 0, 0, 0.28);
+    display: grid;
+    gap: 5px;
+    grid-template-columns: repeat(31, minmax(30px, 1fr));
+    min-width: 1120px;
+    padding: 0.85rem;
+    transform: translate3d(0, 0, 0);
+    transform-origin: top left;
+    will-change: transform;
+}
+
+.map-grid[data-zoom="compact"] {
+    gap: 3px;
+    grid-template-columns: repeat(31, minmax(22px, 1fr));
+    min-width: 820px;
+    padding: 0.65rem;
+}
+
+.map-grid[data-zoom="compact"] .map-tile {
+    border-radius: 7px;
+    font-size: 0.58rem;
+    min-height: 22px;
+}
+
+.map-grid[data-zoom="large"] {
+    gap: 6px;
+    grid-template-columns: repeat(31, minmax(38px, 1fr));
+    min-width: 1370px;
+    padding: 1rem;
+}
+
+.map-grid[data-zoom="large"] .map-tile {
+    border-radius: 12px;
+    font-size: 0.76rem;
+    min-height: 38px;
+}
+
+.map-tile {
+    align-items: center;
+    aspect-ratio: 1;
+    background: rgba(106, 67, 31, 0.48);
+    border: 1px solid rgba(69, 42, 22, 0.74);
+    border-radius: 10px;
+    color: var(--text);
+    display: flex;
+    font-size: 0.68rem;
+    justify-content: center;
+    line-height: 1;
+    min-height: 30px;
+    overflow: hidden;
+    padding: 0.1rem;
+    position: relative;
+    text-align: center;
+    transition: filter 140ms ease, opacity 140ms ease, transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.map-tile span {
+    background: rgba(18, 12, 8, 0.62);
+    border-radius: 999px;
+    opacity: 0;
+    padding: 0.12rem 0.28rem;
+    position: relative;
+    transform: translateY(0.15rem);
+    transition: opacity 120ms ease, transform 120ms ease;
+    z-index: 2;
+}
+
+.map-tile:hover span,
+.map-tile:focus span,
+.map-tile.selected span {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.map-tile::before,
+.legend-tile::before,
+.map-tile::after,
+.legend-tile::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+}
+
+.map-tile.desert,
+.legend-tile.desert {
+    background:
+        linear-gradient(24deg, transparent 0 42%, rgba(255, 226, 170, 0.16) 43% 46%, transparent 47%),
+        linear-gradient(158deg, transparent 0 46%, rgba(88, 49, 21, 0.22) 47% 49%, transparent 50%),
+        radial-gradient(circle at 70% 20%, rgba(255, 216, 129, 0.16), transparent 28%),
+        linear-gradient(135deg, rgba(127, 85, 41, 0.18), rgba(196, 144, 67, 0.24) 45%, rgba(99, 64, 31, 0.18));
+}
+
+.map-tile.desert::before,
+.legend-tile.desert::before {
+    border-top: 2px solid rgba(255, 221, 151, 0.34);
+    border-radius: 50%;
+    height: 42%;
+    left: -12%;
+    top: 34%;
+    transform: rotate(-14deg);
+    width: 124%;
+}
+
+.map-tile.desert::after,
+.legend-tile.desert::after {
+    border-top: 1px solid rgba(89, 49, 20, 0.34);
+    border-radius: 50%;
+    bottom: 20%;
+    height: 30%;
+    left: 8%;
+    transform: rotate(-10deg);
+    width: 92%;
+}
+
+.map-tile.player_base {
+    background:
+        radial-gradient(circle at center, rgba(255, 236, 169, 0.95) 0 8%, #f0b44d 9% 16%, #8e5c25 17% 38%, #3b2415 39%),
+        linear-gradient(145deg, #5b351a, #1f1209);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(255, 236, 169, 0.28), 0 0 18px rgba(213, 154, 58, 0.38);
+    font-weight: 800;
+}
+
+.legend-tile.player_base {
+    background: radial-gradient(circle at center, #f0b44d 0 16%, #8e5c25 17% 44%, #3b2415 45%);
+    border-color: var(--accent);
+}
+
+.map-tile.player_base::before,
+.legend-tile.player_base::before {
+    border: 2px solid rgba(255, 224, 153, 0.9);
+    border-radius: 50%;
+    inset: 20%;
+}
+
+.map-tile.player_base::after,
+.legend-tile.player_base::after {
+    background: #fff0bb;
+    border-radius: 2px;
+    height: 26%;
+    left: 44%;
+    top: 24%;
+    width: 12%;
+}
+
+.map-tile.npc_camp {
+    background:
+        radial-gradient(circle at 50% 72%, rgba(0, 0, 0, 0.45), transparent 32%),
+        linear-gradient(145deg, #24110d, #7b2d1d 55%, #25110d);
+    border-color: #a94a36;
+}
+
+.legend-tile.npc_camp {
+    background: linear-gradient(145deg, #2a1510, #6f2a1d 55%, #2a1510);
+    border-color: #a94a36;
+}
+
+.map-tile.npc_camp::before,
+.legend-tile.npc_camp::before {
+    border-bottom: 18px solid #c45d36;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.map-tile.npc_camp::after,
+.legend-tile.npc_camp::after {
+    background: #21110d;
+    bottom: 20%;
+    height: 18%;
+    left: 48%;
+    width: 8%;
+}
+
+.map-tile.spice_oasis {
+    background:
+        radial-gradient(circle at 52% 52%, rgba(255, 178, 73, 0.98) 0 15%, rgba(185, 80, 35, 0.95) 16% 34%, transparent 35%),
+        radial-gradient(circle at 50% 50%, rgba(229, 140, 69, 0.34), transparent 56%),
+        linear-gradient(140deg, #7b3f19, #281309);
+    border-color: #e58c45;
+    box-shadow: inset 0 0 16px rgba(229, 140, 69, 0.18);
+}
+
+.legend-tile.spice_oasis {
+    background:
+        radial-gradient(circle at 52% 52%, rgba(255, 157, 61, 0.95) 0 18%, rgba(155, 72, 38, 0.95) 19% 38%, transparent 39%),
+        linear-gradient(140deg, #7b3f19, #281309);
+    border-color: #e58c45;
+}
+
+.map-tile.spice_oasis::before,
+.legend-tile.spice_oasis::before {
+    background: rgba(255, 206, 92, 0.72);
+    border-radius: 50%;
+    filter: blur(4px);
+    inset: 28%;
+}
+
+.map-tile.spice_oasis::after,
+.legend-tile.spice_oasis::after {
+    background: #2a1309;
+    clip-path: polygon(0 45%, 32% 38%, 52% 0, 62% 42%, 100% 48%, 64% 58%, 48% 100%, 36% 60%);
+    inset: 24%;
+    opacity: 0.45;
+}
+
+.map-tile.water_oasis {
+    background:
+        radial-gradient(ellipse at 48% 54%, #9be8ef 0 14%, #2b8aa0 15% 38%, transparent 39%),
+        radial-gradient(circle at 50% 52%, rgba(116, 201, 234, 0.22), transparent 58%),
+        linear-gradient(140deg, #1f3b33, #17303a);
+    border-color: #74b6d6;
+    box-shadow: inset 0 0 16px rgba(116, 201, 234, 0.16);
+}
+
+.legend-tile.water_oasis {
+    background: radial-gradient(circle at center, #79d1df 0 20%, #1b687a 21% 45%, #17303a 46%);
+    border-color: #74b6d6;
+}
+
+.map-tile.water_oasis::before,
+.legend-tile.water_oasis::before {
+    background: rgba(219, 255, 255, 0.75);
+    border-radius: 50%;
+    height: 12%;
+    left: 38%;
+    top: 34%;
+    width: 28%;
+}
+
+.map-tile.water_oasis::after,
+.legend-tile.water_oasis::after {
+    background: #3f5e2c;
+    border-radius: 50% 50% 10% 50%;
+    bottom: 18%;
+    height: 26%;
+    right: 18%;
+    transform: rotate(-35deg);
+    width: 16%;
+}
+
+.map-tile.iron_outcrop {
+    background:
+        radial-gradient(circle at 50% 70%, rgba(0, 0, 0, 0.34), transparent 38%),
+        linear-gradient(145deg, #1b1a18, #5d574d 52%, #1d1a18);
+    border-color: #777069;
+}
+
+.legend-tile.iron_outcrop {
+    background: linear-gradient(145deg, #1f1d1b, #4b4740 52%, #1d1a18);
+    border-color: #777069;
+}
+
+.map-tile.iron_outcrop::before,
+.legend-tile.iron_outcrop::before {
+    background: #8f8779;
+    clip-path: polygon(50% 0, 75% 48%, 60% 100%, 24% 100%, 8% 46%);
+    height: 62%;
+    left: 18%;
+    top: 20%;
+    width: 28%;
+}
+
+.map-tile.iron_outcrop::after,
+.legend-tile.iron_outcrop::after {
+    background: #5b5750;
+    clip-path: polygon(46% 0, 88% 100%, 8% 100%);
+    height: 48%;
+    right: 18%;
+    top: 34%;
+    width: 26%;
+}
+
+.map-tile.scrap_field {
+    background:
+        radial-gradient(circle at 42% 34%, rgba(96, 126, 48, 0.34), transparent 28%),
+        linear-gradient(145deg, #3d2c17, #556326 48%, #1d2511);
+    border-color: #738548;
+}
+
+.legend-tile.scrap_field {
+    background: linear-gradient(145deg, #3d2c17, #4f5a22 48%, #1d2511);
+    border-color: #738548;
+}
+
+.map-tile.scrap_field::before,
+.legend-tile.scrap_field::before {
+    background: #22320f;
+    border-radius: 55% 55% 45% 45%;
+    height: 40%;
+    left: 26%;
+    top: 20%;
+    width: 26%;
+}
+
+.map-tile.scrap_field::after,
+.legend-tile.scrap_field::after {
+    background: #725029;
+    border-radius: 3px;
+    height: 38%;
+    left: 38%;
+    top: 48%;
+    transform: rotate(8deg);
+    width: 10%;
+}
+
+.map-tile.selected {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 2px var(--accent), 0 0 24px rgba(213, 154, 58, 0.44);
+}
+
+.map-tile.has-movement {
+    outline: 2px solid rgba(255, 242, 210, 0.72);
+    outline-offset: -3px;
+}
+
+.map-tile.scouted {
+    outline: 1px solid rgba(116, 201, 234, 0.78);
+    outline-offset: -4px;
+}
+
+.map-tile.scouted span::after {
+    color: #a8e4f6;
+    content: " ◦";
+}
+
+.map-tile.bookmarked {
+    box-shadow: inset 0 0 0 2px rgba(246, 202, 119, 0.62), 0 0 18px rgba(213, 154, 58, 0.24);
+}
+
+.map-tile.bookmarked span::before {
+    color: #f4cf7e;
+    content: "★ ";
+}
+
+.bookmark-form {
+    margin: 0.45rem 0 0.75rem;
+}
+
+.recent-intel-panel .list-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.intel-card {
+    background: color-mix(in srgb, var(--panel-soft) 92%, black);
+    border: 1px solid rgba(116, 201, 234, 0.18);
+    border-radius: 14px;
+    color: var(--text);
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.75rem;
+}
+
+.intel-card:hover {
+    border-color: rgba(116, 201, 234, 0.42);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+.intel-summary {
+    color: #a8e4f6;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.bookmark-grid {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.bookmark-card {
+    background: color-mix(in srgb, var(--panel-soft) 92%, black);
+    border: 1px solid rgba(213, 154, 58, 0.22);
+    border-radius: 14px;
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.75rem;
+}
+
+.bookmark-card > a {
+    color: var(--text);
+    display: grid;
+    gap: 0.25rem;
+}
+
+.bookmark-card:hover {
+    border-color: rgba(213, 154, 58, 0.48);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+.map-detail {
+    position: sticky;
+    top: 1rem;
+}
+
+.raid-form {
+    margin-top: 1rem;
+}
+
+.raid-estimate {
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.raid-estimate span {
+    background: rgba(29, 19, 12, 0.9);
+    border: 1px solid rgba(213, 154, 58, 0.18);
+    border-radius: 999px;
+    font-size: 0.86rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.raid-estimate .estimate-outcome {
+    border-color: rgba(116, 201, 234, 0.3);
+    color: #a8e4f6;
+    font-weight: 800;
+}
+
+.raid-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+@media (max-width: 760px) {
+    .hero,
+    .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .resource-grid,
+    .building-grid,
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .base-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .map-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .village-view {
+        grid-template-columns: 1fr;
+    }
+
+    .village-map {
+        grid-template-areas: none;
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+        min-height: 0;
+    }
+
+    .fields-map {
+        grid-template-areas: none;
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+        min-height: 0;
+    }
+
+    .fields-map::after {
+        display: none;
+    }
+
+    .scene-art-map {
+        display: block;
+    }
+
+    .scene-art-map .building-spot,
+    .scene-art-map .field-spot {
+        padding: 0.25rem;
+    }
+
+    .scene-art-map .building-art {
+        display: none;
+    }
+
+    .scene-art-map .building-label {
+        font-size: 0.62rem;
+        max-width: 92%;
+    }
+
+    .village-scene-map .building-spot {
+        height: 20%;
+        width: 20%;
+    }
+
+    .fields-scene-map .field-spot {
+        height: 17%;
+        width: 24%;
+    }
+
+    .building-spot.iron_mine,
+    .building-spot.wood_yard,
+    .building-spot.dew_field,
+    .building-spot.spice_field,
+    .building-spot.warehouse,
+    .building-spot.windtrap,
+    .building-spot.large_windtrap,
+    .building-spot.embassy,
+    .building-spot.barracks,
+    .building-spot.command_center,
+    .building-spot.research_center,
+    .building-spot.deathstill,
+    .building-spot.influence_sanctuary {
+        grid-area: auto;
+    }
+
+    .field-spot.iron_mine,
+    .field-spot.wood_yard,
+    .field-spot.dew_field,
+    .field-spot.spice_field,
+    .field-spot.windtrap,
+    .field-spot.large_windtrap {
+        grid-area: auto;
+    }
+
+    .map-detail {
+        position: static;
+    }
+
+    .base-sidebar {
+        position: static;
+    }
+
+    .base-tabs {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+    }
+
+    .base-tab {
+        min-width: 170px;
+    }
+
+    .stat-stack {
+        justify-content: flex-start;
+    }
+}
+
+/* Visual polish layer */
+body {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(213, 154, 58, 0.18), transparent 26rem),
+        radial-gradient(circle at 82% 12%, rgba(116, 182, 214, 0.08), transparent 22rem),
+        linear-gradient(180deg, rgba(23, 17, 12, 0.45), rgba(23, 17, 12, 0.95)),
+        repeating-linear-gradient(112deg, rgba(255, 220, 156, 0.025) 0 1px, transparent 1px 18px),
+        var(--bg);
+}
+
+body::before {
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(255, 220, 156, 0.12), transparent 42%),
+        linear-gradient(90deg, transparent 0 8%, rgba(255, 210, 122, 0.025) 8.2% 8.4%, transparent 8.6% 100%);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: fixed;
+    z-index: -1;
+}
+
+.topbar {
+    background: rgba(16, 10, 6, 0.76);
+    backdrop-filter: blur(14px);
+    border-bottom-color: rgba(213, 154, 58, 0.28);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.brand {
+    text-shadow: 0 0 24px rgba(213, 154, 58, 0.28);
+}
+
+nav a,
+.base-tab,
+.button-link,
+button {
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+nav a:hover,
+nav a.active,
+.base-tab:hover,
+.button-link:hover,
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+nav a.active {
+    color: var(--text);
+    text-shadow: 0 0 18px rgba(213, 154, 58, 0.42);
+}
+
+.hero,
+.panel,
+.messages,
+.warning,
+.base-sidebar {
+    background:
+        linear-gradient(180deg, rgba(255, 226, 170, 0.035), transparent 38%),
+        color-mix(in srgb, var(--panel) 88%, black);
+    border-color: rgba(213, 154, 58, 0.22);
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 226, 170, 0.06);
+}
+
+.hero h1,
+.panel h1,
+.panel h2 {
+    letter-spacing: -0.025em;
+}
+
+.resource-card,
+.building-card,
+.faction-card,
+.building-detail {
+    background:
+        linear-gradient(180deg, rgba(255, 220, 156, 0.045), transparent 52%),
+        color-mix(in srgb, var(--panel-soft) 90%, black);
+    border-color: rgba(213, 154, 58, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.045), 0 10px 28px rgba(0, 0, 0, 0.2);
+}
+
+.building-card:hover,
+.resource-card:hover,
+.faction-card:hover {
+    border-color: rgba(213, 154, 58, 0.38);
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.08), 0 16px 36px rgba(0, 0, 0, 0.28);
+}
+
+.resource-card {
+    overflow: hidden;
+    position: relative;
+}
+
+.resource-card::after {
+    background: radial-gradient(circle, rgba(255, 226, 170, 0.16), transparent 60%);
+    content: "";
+    height: 5rem;
+    opacity: 0.55;
+    position: absolute;
+    right: -1.8rem;
+    top: -2.2rem;
+    width: 5rem;
+}
+
+.resource-meter {
+    background: rgba(18, 10, 5, 0.76);
+    border: 1px solid rgba(213, 154, 58, 0.16);
+    border-radius: 999px;
+    height: 0.48rem;
+    margin-top: 0.65rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.resource-meter span {
+    background: linear-gradient(90deg, rgba(213, 154, 58, 0.75), rgba(246, 202, 119, 0.95));
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+    min-width: 0.35rem;
+}
+
+.resource-card.iron .resource-meter span { background: linear-gradient(90deg, #7d7770, #d6cec2); }
+.resource-card.wood .resource-meter span { background: linear-gradient(90deg, #6d8e3f, #b8d678); }
+.resource-card.water .resource-meter span { background: linear-gradient(90deg, #357f9e, #84d7f3); }
+.resource-card.spice .resource-meter span { background: linear-gradient(90deg, #a7471f, #f3a14f); }
+.resource-card.melange .resource-meter span { background: linear-gradient(90deg, #8a5525, #ffd28b); }
+
+.resource-card.iron strong { color: #c9c2b8; }
+.resource-card.wood strong { color: #a7c66f; }
+.resource-card.water strong { color: #74c9ea; }
+.resource-card.spice strong { color: #f39a4d; }
+.resource-card.melange strong { color: #ffd28b; }
+
+button,
+.button-link {
+    background: linear-gradient(180deg, #e1a849, #b77627);
+    border: 1px solid rgba(255, 229, 174, 0.34);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 239, 202, 0.28);
+    color: #160d07;
+    font-weight: 800;
+}
+
+button.secondary,
+.button-link.secondary {
+    background: linear-gradient(180deg, #5d4430, #3b291c);
+    color: var(--text);
+}
+
+button:disabled {
+    background: #3b2a1e;
+    border-color: rgba(185, 157, 117, 0.18);
+    box-shadow: none;
+    color: rgba(246, 227, 195, 0.45);
+}
+
+.scene-art-map {
+    box-shadow: inset 0 0 0 1px rgba(255, 226, 170, 0.08), inset 0 -80px 120px rgba(0, 0, 0, 0.26), 0 24px 60px rgba(0, 0, 0, 0.34);
+}
+
+.scene-art-map .building-spot,
+.scene-art-map .field-spot {
+    background: rgba(19, 11, 6, 0.08);
+    border-color: rgba(246, 202, 119, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 240, 200, 0.025);
+    transform: translate(-50%, -50%);
+}
+
+.scene-art-map .building-spot:hover,
+.scene-art-map .building-spot:focus,
+.scene-art-map .building-spot.active,
+.scene-art-map .field-spot:hover,
+.scene-art-map .field-spot:focus,
+.scene-art-map .field-spot.active {
+    background: rgba(21, 12, 6, 0.46);
+    border-color: rgba(246, 202, 119, 0.75);
+    box-shadow: inset 0 0 0 1px rgba(255, 235, 182, 0.45), 0 0 28px rgba(213, 154, 58, 0.28), 0 16px 32px rgba(0, 0, 0, 0.32);
+    transform: translate(-50%, -50%);
+}
+
+.scene-art-map .building-label {
+    background: rgba(18, 10, 5, 0.76);
+    border-color: rgba(246, 202, 119, 0.28);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.scene-art-map .building-art img {
+    filter: drop-shadow(0 16px 12px rgba(0, 0, 0, 0.48)) saturate(1.08) contrast(1.04);
+}
+
+.scene-art-map.base-plot-map .base-plot,
+.scene-art-map.base-plot-map .base-plot:hover,
+.scene-art-map.base-plot-map .base-plot:focus,
+.scene-art-map.base-plot-map .base-plot.active {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.scene-art-map.base-plot-map .base-plot {
+    height: 24%;
+    width: 15%;
+}
+
+.scene-art-map.base-plot-map .slot-center {
+    height: 36%;
+    left: 50%;
+    top: 50%;
+    width: 23%;
+}
+
+.scene-art-map.base-plot-map .slot-north { left: 50%; top: 19%; }
+.scene-art-map.base-plot-map .slot-north_east { left: 66%; top: 29%; }
+.scene-art-map.base-plot-map .slot-east { left: 72%; top: 51%; }
+.scene-art-map.base-plot-map .slot-south_east { left: 64%; top: 71%; }
+.scene-art-map.base-plot-map .slot-south { left: 50%; top: 76%; }
+.scene-art-map.base-plot-map .slot-south_west { left: 36%; top: 71%; }
+.scene-art-map.base-plot-map .slot-west { left: 28%; top: 51%; }
+.scene-art-map.base-plot-map .slot-north_west { left: 34%; top: 29%; }
+
+.map-tile {
+    box-shadow: inset 0 1px 0 rgba(255, 230, 180, 0.05), inset 0 -10px 18px rgba(0, 0, 0, 0.24);
+}
+
+.map-tile:hover,
+.map-tile:focus,
+.map-tile.selected {
+    transform: scale(1.07);
+    z-index: 2;
+}
+
+.map-tile.dimmed {
+    filter: grayscale(0.8) brightness(0.58);
+    opacity: 0.38;
+}
+
+.map-tile.dimmed.selected,
+.map-tile.dimmed:hover,
+.map-tile.dimmed:focus {
+    filter: none;
+    opacity: 1;
+}
+
+.cost-list span,
+.raid-estimate span,
+.mission-list span,
+.requirement-list span,
+.queue-state,
+.capacity {
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.045);
+}
+
+input {
+    background: linear-gradient(180deg, #160e09, #100905);
+    border-color: rgba(213, 154, 58, 0.24);
+}
+
+input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(213, 154, 58, 0.16);
+    outline: none;
+}
+
+/* Illustrated Dune strategy-map treatment */
+.map-grid {
+    background:
+        linear-gradient(90deg, rgba(74, 50, 24, 0.28) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(74, 50, 24, 0.28) 1px, transparent 1px),
+        radial-gradient(circle at 18% 24%, rgba(233, 191, 104, 0.26), transparent 13rem),
+        radial-gradient(circle at 78% 72%, rgba(110, 72, 33, 0.14), transparent 15rem),
+        linear-gradient(135deg, #d3aa61, #e2c070 38%, #c58e45 100%);
+    background-size: 45px 45px, 45px 45px, auto, auto, auto;
+    border: 2px solid rgba(70, 47, 23, 0.62);
+    border-radius: 8px;
+    box-shadow: inset 0 0 34px rgba(72, 43, 18, 0.26), 0 18px 42px rgba(0, 0, 0, 0.26);
+    gap: 1px;
+    grid-template-columns: repeat(31, minmax(42px, 1fr));
+    min-width: 1440px;
+    padding: 0.25rem;
+}
+
+.map-grid[data-zoom="compact"] {
+    gap: 1px;
+    grid-template-columns: repeat(31, minmax(30px, 1fr));
+    min-width: 1040px;
+    padding: 0.2rem;
+}
+
+.map-grid[data-zoom="large"] {
+    gap: 2px;
+    grid-template-columns: repeat(31, minmax(56px, 1fr));
+    min-width: 1850px;
+    padding: 0.35rem;
+}
+
+.map-tile {
+    background: rgba(220, 186, 111, 0.56);
+    border: 1px solid rgba(91, 61, 29, 0.22);
+    border-radius: 2px;
+    box-shadow: none;
+    min-height: 42px;
+}
+
+.map-grid[data-zoom="compact"] .map-tile {
+    border-radius: 1px;
+    min-height: 30px;
+}
+
+.map-grid[data-zoom="large"] .map-tile {
+    border-radius: 3px;
+    min-height: 56px;
+}
+
+.map-tile.desert,
+.legend-tile.desert {
+    background:
+        linear-gradient(rgba(40, 23, 10, 0.02), rgba(40, 23, 10, 0.08)),
+        url("/static/images/SandDuneTile.png") center / cover no-repeat,
+        radial-gradient(ellipse at 68% 30%, rgba(111, 78, 38, 0.16) 0 10%, transparent 11%),
+        linear-gradient(24deg, transparent 0 43%, rgba(255, 238, 174, 0.36) 44% 46%, transparent 47%),
+        linear-gradient(158deg, transparent 0 49%, rgba(127, 86, 41, 0.22) 50% 52%, transparent 53%),
+        linear-gradient(135deg, rgba(238, 202, 124, 0.72), rgba(211, 168, 89, 0.66));
+}
+
+.map-tile.desert::before,
+.legend-tile.desert::before {
+    border-top: 2px solid rgba(119, 80, 36, 0.22);
+    height: 36%;
+    left: -6%;
+    top: 36%;
+    width: 112%;
+}
+
+.map-tile.desert::after,
+.legend-tile.desert::after {
+    background: rgba(92, 66, 39, 0.28);
+    border: 0;
+    border-radius: 50%;
+    bottom: 24%;
+    height: 8%;
+    left: 62%;
+    transform: rotate(-10deg);
+    width: 18%;
+}
+
+.map-tile.player_base,
+.legend-tile.player_base {
+    background:
+        radial-gradient(circle at 50% 52%, #f5db91 0 12%, #70502b 13% 17%, transparent 18%),
+        radial-gradient(circle at 50% 52%, rgba(245, 219, 145, 0.2) 0 42%, transparent 43%),
+        linear-gradient(135deg, rgba(210, 158, 69, 0.72), rgba(91, 55, 28, 0.82));
+    border-color: #f0bf61;
+}
+
+.map-tile.player_base.atreides-base {
+    background:
+        linear-gradient(rgba(20, 30, 28, 0.04), rgba(20, 30, 28, 0.12)),
+        url("/static/images/AtreidesBaseTile.png") center / cover no-repeat,
+        linear-gradient(135deg, rgba(210, 158, 69, 0.72), rgba(91, 55, 28, 0.82));
+}
+
+.map-tile.player_base.harkonnen-base {
+    background:
+        linear-gradient(rgba(35, 12, 10, 0.04), rgba(35, 12, 10, 0.14)),
+        url("/static/images/HarkonnenBaseTile.png") center / cover no-repeat,
+        linear-gradient(135deg, rgba(130, 54, 35, 0.78), rgba(52, 24, 18, 0.88));
+}
+
+.map-tile.player_base.fremen-base {
+    background:
+        linear-gradient(rgba(16, 31, 34, 0.04), rgba(16, 31, 34, 0.12)),
+        url("/static/images/FremenBaseTile.png") center / cover no-repeat,
+        linear-gradient(135deg, rgba(82, 116, 114, 0.7), rgba(58, 40, 24, 0.84));
+}
+
+.map-tile.player_base::before,
+.legend-tile.player_base::before {
+    border: 3px solid rgba(43, 30, 18, 0.85);
+    border-radius: 50%;
+    inset: 18%;
+}
+
+.map-tile.player_base::after,
+.legend-tile.player_base::after {
+    background: #f3c96e;
+    border: 2px solid #3b2415;
+    border-radius: 50% 50% 18% 18%;
+    height: 28%;
+    left: 36%;
+    top: 34%;
+    width: 28%;
+}
+
+.map-tile.npc_camp,
+.legend-tile.npc_camp {
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(168, 53, 37, 0.88) 49% 54%, transparent 55%),
+        linear-gradient(rgba(40, 15, 10, 0.02), rgba(40, 15, 10, 0.1)),
+        url("/static/images/RaiderTile.png") center / cover no-repeat,
+        radial-gradient(circle at 50% 54%, rgba(255, 218, 142, 0.86) 0 24%, transparent 25%),
+        radial-gradient(circle at 50% 54%, transparent 0 34%, #9d3325 35% 42%, transparent 43%),
+        linear-gradient(135deg, rgba(132, 70, 35, 0.78), rgba(69, 34, 22, 0.86));
+    border-color: #b94d36;
+}
+
+.map-tile.npc_camp::before,
+.legend-tile.npc_camp::before {
+    border-bottom: 16px solid #4a2418;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    bottom: 28%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.map-tile.npc_camp::after,
+.legend-tile.npc_camp::after {
+    background: #c55a38;
+    border-radius: 999px;
+    height: 12%;
+    left: 32%;
+    top: 28%;
+    width: 36%;
+}
+
+.map-tile.spice_oasis,
+.legend-tile.spice_oasis {
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(239, 166, 72, 0.76) 49% 54%, transparent 55%),
+        linear-gradient(rgba(40, 18, 8, 0.02), rgba(40, 18, 8, 0.08)),
+        url("/static/images/SpiceTile.png") center / cover no-repeat,
+        radial-gradient(circle at 42% 58%, #b92f1e 0 5%, transparent 6%),
+        radial-gradient(circle at 56% 44%, #d23f24 0 5%, transparent 6%),
+        radial-gradient(circle at 58% 62%, #efb24e 0 5%, transparent 6%),
+        radial-gradient(circle at 50% 52%, rgba(240, 130, 52, 0.62) 0 30%, transparent 31%),
+        linear-gradient(135deg, #d8a45f, #8e431f);
+    border-color: #e58c45;
+}
+
+.map-tile.spice_oasis::before,
+.legend-tile.spice_oasis::before {
+    background: transparent;
+    border: 2px dashed rgba(95, 44, 21, 0.8);
+    border-radius: 50%;
+    filter: none;
+    inset: 20%;
+}
+
+.map-tile.spice_oasis::after,
+.legend-tile.spice_oasis::after {
+    background: #f6b15a;
+    border-radius: 50%;
+    clip-path: none;
+    inset: 40%;
+    opacity: 0.9;
+}
+
+.map-tile.water_oasis,
+.legend-tile.water_oasis {
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(92, 185, 211, 0.72) 49% 54%, transparent 55%),
+        linear-gradient(rgba(12, 31, 38, 0.02), rgba(12, 31, 38, 0.08)),
+        url("/static/images/WaterTile.png") center / cover no-repeat,
+        radial-gradient(ellipse at 48% 54%, #8fd9e4 0 24%, #2d8094 25% 44%, transparent 45%),
+        radial-gradient(circle at 72% 30%, rgba(63, 94, 44, 0.72) 0 10%, transparent 11%),
+        linear-gradient(135deg, #d0ad66, #8c6b3e);
+    border-color: #5bb9d3;
+}
+
+.map-tile.water_oasis::before,
+.legend-tile.water_oasis::before {
+    background: rgba(229, 255, 255, 0.72);
+    border-radius: 50%;
+    height: 10%;
+    left: 36%;
+    top: 42%;
+    width: 28%;
+}
+
+.map-tile.water_oasis::after,
+.legend-tile.water_oasis::after {
+    background: #476b31;
+    border-radius: 50% 50% 10% 50%;
+    bottom: 18%;
+    height: 26%;
+    right: 18%;
+    transform: rotate(-35deg);
+    width: 16%;
+}
+
+.map-tile.iron_outcrop,
+.legend-tile.iron_outcrop {
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(120, 111, 99, 0.72) 49% 54%, transparent 55%),
+        linear-gradient(rgba(25, 22, 18, 0.02), rgba(25, 22, 18, 0.1)),
+        url("/static/images/IronTile.png") center / cover no-repeat,
+        radial-gradient(circle at 50% 76%, rgba(58, 48, 37, 0.42), transparent 30%),
+        linear-gradient(135deg, #b59663, #746754 52%, #3d3832);
+    border-color: #82796c;
+}
+
+.map-tile.iron_outcrop::before,
+.legend-tile.iron_outcrop::before {
+    background: #56514a;
+    clip-path: polygon(50% 0, 78% 52%, 62% 100%, 22% 100%, 8% 50%);
+    height: 58%;
+    left: 18%;
+    top: 20%;
+    width: 30%;
+}
+
+.map-tile.iron_outcrop::after,
+.legend-tile.iron_outcrop::after {
+    background: #918879;
+    clip-path: polygon(48% 0, 90% 100%, 8% 100%);
+    height: 48%;
+    right: 18%;
+    top: 34%;
+    width: 28%;
+}
+
+.map-tile.scrap_field,
+.legend-tile.scrap_field {
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(98, 130, 51, 0.72) 49% 54%, transparent 55%),
+        linear-gradient(rgba(20, 35, 14, 0.02), rgba(20, 35, 14, 0.08)),
+        url("/static/images/Woodtile.png") center / cover no-repeat,
+        radial-gradient(circle at 36% 36%, #4c6f24 0 13%, transparent 14%),
+        radial-gradient(circle at 58% 30%, #65822e 0 12%, transparent 13%),
+        radial-gradient(circle at 54% 58%, #3f5d1d 0 16%, transparent 17%),
+        linear-gradient(135deg, #d0a966, #79633a);
+    border-color: #758a43;
+}
+
+.map-tile.scrap_field::before,
+.legend-tile.scrap_field::before {
+    background: #294017;
+    border-radius: 55% 55% 45% 45%;
+    height: 34%;
+    left: 28%;
+    top: 22%;
+    width: 24%;
+}
+
+.map-tile.scrap_field::after,
+.legend-tile.scrap_field::after {
+    background: #725029;
+    border-radius: 3px;
+    height: 36%;
+    left: 40%;
+    top: 48%;
+    transform: rotate(8deg);
+    width: 10%;
+}
+
+.map-tile.selected {
+    box-shadow: inset 0 0 0 2px #2a1709, inset 0 0 0 4px var(--accent), 0 0 18px rgba(213, 154, 58, 0.42);
+    z-index: 4;
+}
+
+.map-tile.scouted {
+    outline: 2px solid rgba(54, 123, 145, 0.82);
+    outline-offset: -4px;
+}
+
+.map-tile.bookmarked {
+    box-shadow: inset 0 0 0 2px #2a1709, inset 0 0 0 4px rgba(246, 202, 119, 0.82), 0 0 16px rgba(213, 154, 58, 0.28);
+}
+
+.map-tile.player_base::before,
+.map-tile.player_base::after,
+.map-tile.desert::before,
+.map-tile.desert::after,
+.map-tile.npc_camp::before,
+.map-tile.npc_camp::after,
+.map-tile.spice_oasis::before,
+.map-tile.spice_oasis::after,
+.map-tile.water_oasis::before,
+.map-tile.water_oasis::after,
+.map-tile.iron_outcrop::before,
+.map-tile.iron_outcrop::after,
+.map-tile.scrap_field::before,
+.map-tile.scrap_field::after,
+.legend-tile.desert::before,
+.legend-tile.desert::after,
+.legend-tile.npc_camp::before,
+.legend-tile.npc_camp::after,
+.legend-tile.spice_oasis::before,
+.legend-tile.spice_oasis::after,
+.legend-tile.water_oasis::before,
+.legend-tile.water_oasis::after,
+.legend-tile.iron_outcrop::before,
+.legend-tile.iron_outcrop::after,
+.legend-tile.scrap_field::before,
+.legend-tile.scrap_field::after {
+    display: none;
+}
+
+.map-panel.dragging .map-tile.player_base.atreides-base,
+.map-panel.dragging .map-tile.player_base.harkonnen-base,
+.map-panel.dragging .map-tile.player_base.fremen-base {
+    background-image: none;
+}

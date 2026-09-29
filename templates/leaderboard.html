@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboards{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Rankings</p>
+        <h1>Leaderboards</h1>
+        <p>Points come from development spending only. Troop costs do not affect score.</p>
+    </div>
+</section>
+
+<section class="two-column">
+    <article class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Players</p>
+                <h2>House Rankings</h2>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Player</th>
+                    <th>Faction</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{% if player.alliance_tag %}[{{ player.alliance_tag }}] {% endif %}{{ player.username }}</td>
+                        <td>{{ player.faction_name }}</td>
+                        <td>{{ player.total_points }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4">No players yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+
+    <article class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Alliances</p>
+                <h2>Combined Power</h2>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Alliance</th>
+                    <th>Members</th>
+                    <th>Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alliance in alliances %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>[{{ alliance.tag }}] {{ alliance.name }}</td>
+                        <td>{{ alliance.member_count }}</td>
+                        <td>{{ alliance.total_points }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4">No alliances yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}
