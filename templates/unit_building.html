@@ -63,6 +63,12 @@
                         {% endfor %}
                     </div>
                 {% endif %}
+                {% if unit.counter_summary or unit.weak_against %}
+                    <div class="tactical-matchup">
+                        {% if unit.counter_summary %}<p><strong>Strong against:</strong> {{ unit.counter_summary }}</p>{% endif %}
+                        {% if unit.weak_against %}<p><strong>Countered by:</strong> {{ unit.weak_against }}</p>{% endif %}
+                    </div>
+                {% endif %}
                 <div class="cost-list">
                     <span>Health {{ unit.health }}</span>
                     <span>Damage {{ unit.damage }}</span>

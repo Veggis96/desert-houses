@@ -52,6 +52,8 @@
         <div><span>Your shields absorbed</span><strong>{{ combat.attacker_shield_absorbed|round|int }}</strong></div>
         <div><span>Enemy shields absorbed</span><strong>{{ combat.defender_shield_absorbed|round|int }}</strong></div>
         <div><span>Enemy penetration</span><strong>{{ combat.defender_piercing_percent }}%</strong></div>
+        <div><span>Your counter bonus</span><strong>+{{ combat.attacker_counter_bonus_percent|default(0) }}%</strong></div>
+        <div><span>Enemy counter bonus</span><strong>+{{ combat.defender_counter_bonus_percent|default(0) }}%</strong></div>
     </div>
     <div class="combat-rounds" aria-label="Combat rounds">
         {% for round in combat.rounds %}

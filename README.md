@@ -20,7 +20,9 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Barracks requires Command Center level 2
 - Train faction-named starter units with health, damage, armor, shield, speed, carry, and Water upkeep stats
 - Unlock faction elite infantry at Barracks level 6 and Personal Shields level 2: Atreides Shield Guard, Harkonnen Devastator, or Fremen Fedaykin
+- Train faction-named RPG teams and heavy gunners to counter aircraft, vehicles, melee troops, and massed light infantry
 - Resolve raids and bloom captures over simultaneous combat rounds with real shield absorption, slow-blade penetration, retreats, and detailed reports
+- Gain composition-weighted matchup bonuses from soft unit counters; mission previews and battle reports show the active bonus
 - Train units through a separate sequential unit queue
 - Research construction speed, unit training speed, health, damage, armor, shields, and Bene Gesserit influence
 - Research runs through a separate research queue and can unlock faction-specific influence buildings
@@ -105,6 +107,10 @@ Personal shields now absorb conventional damage before health. Each unit has a s
 - Fremen Fedaykin emphasize speed and shield penetration with lighter shielding.
 
 Raids and Large Bloom captures resolve up to six simultaneous rounds. Reports record damage per round, shield absorption, penetration, casualties, survivors, and retreating forces. Surviving attackers return after a failed operation; surviving player defenders retreat home after losing a controlled bloom.
+
+## Unit counters
+
+Combat uses soft counters rather than automatic wins. RPG teams gain +55% damage against aircraft and +40% against vehicles. Heavy gunners suppress light and melee formations, knife fighters bypass shielded troops, shielded elites dominate conventional ranged units, and Assault Ornithopters strafe infantry and exposed support units. Bonuses are weighted by both army compositions, so mixed forces reduce the effect of a single specialized counter.
 
 Alliance leaders and officers can set a target of 1–20 controlled Large Spice Blooms on the alliance page. Progress counts territory held by current members and falls when control or membership changes. This is a shared territorial goal, with no automatic resource reward.
 

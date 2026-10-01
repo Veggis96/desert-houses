@@ -35,6 +35,35 @@ class CombatV2Tests(unittest.TestCase):
         self.assertGreater(result["attacker_piercing_percent"], result["defender_piercing_percent"])
         self.assertIn("elite_guard", result["attacker_survivors"])
 
+    def test_rpg_teams_counter_aircraft_without_becoming_a_hard_counter(self):
+        research = game.ResearchLevels({}, "atreides")
+        rpg_bonus = game.counter_attack_bonus(
+            {"rpg_trooper": 6}, {"assault_ornithopter": 2}, research, defender_is_player=True
+        )
+        rifle_bonus = game.counter_attack_bonus(
+            {"maula_pistol": 6}, {"assault_ornithopter": 2}, research, defender_is_player=True
+        )
+        mixed_bonus = game.counter_attack_bonus(
+            {"rpg_trooper": 3, "maula_pistol": 3}, {"assault_ornithopter": 2}, research, defender_is_player=True
+        )
+        self.assertAlmostEqual(rpg_bonus, 0.55)
+        self.assertEqual(rifle_bonus, 0)
+        self.assertGreater(mixed_bonus, 0)
+        self.assertLess(mixed_bonus, rpg_bonus)
+
+        result = game.resolve_combat(
+            {"rpg_trooper": 6}, {"assault_ornithopter": 2}, research, research, defender_is_player=True
+        )
+        self.assertEqual(result["attacker_counter_bonus_percent"], 55)
+        self.assertGreater(result["rounds"][0]["attacker_damage"], game.player_combat_profile({"rpg_trooper": 6}, research)["attack"])
+
+    def test_counter_roles_cover_the_core_combat_triangle(self):
+        self.assertIn("aircraft", game.force_counter_labels({"rpg_trooper": 1}))
+        self.assertIn("shielded troops", game.force_counter_labels({"knife_fighter": 1}))
+        self.assertIn("light units", game.force_counter_labels({"heavy_gunner": 1}))
+        self.assertIn("infantry", game.force_counter_labels({"assault_ornithopter": 1}))
+        self.assertEqual(game.force_counter_labels({"carryall": 1}), [])
+
     def test_combat_report_persists_rounds_and_renders_summary(self):
         with game.get_db() as db:
             village = db.execute("SELECT * FROM villages WHERE id = ?", (self.village_id,)).fetchone()
@@ -66,6 +95,7 @@ class CombatV2Tests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Combat V2", response.data)
         self.assertIn(b"Shield and damage summary", response.data)
+        self.assertIn(b"Your counter bonus", response.data)
         self.assertIn(b"Atreides Shield Guard", response.data)
 
     def test_player_garrison_capture_uses_round_combat_and_player_report(self):

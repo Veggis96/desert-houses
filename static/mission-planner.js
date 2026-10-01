@@ -21,6 +21,8 @@ document.querySelectorAll("form[data-plan-mission]").forEach((form) => {
             const time = value => new Date(value).toLocaleTimeString();
             const items = [`Selected attack ${data.attack}`, `Durability ${data.durability}`, `Shield ${data.shield}`,
                 `Shield pierce ${data.shield_piercing}%`, `Carry ${data.carry}`,
+                data.counter_targets.length ? `Counters ${data.counter_targets.join(", ")}` : "No dedicated counter role",
+                data.counter_bonus === null ? "Counter bonus unknown" : `Matchup bonus +${data.counter_bonus}%`,
                 `One way ${data.travel_seconds}s`, `Arrival ${time(data.arrival_at)}`,
                 data.return_at ? `Expected home ${time(data.return_at)}` : "Stationed after arrival",
                 data.known_defense === null ? "Enemy defense unknown" : `Known defense ${data.known_defense}`,

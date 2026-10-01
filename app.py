@@ -327,6 +327,10 @@ UNIT_TYPES = {
     "knife_fighter": {
         "category": "military",
         "tier": 1,
+        "combat_tags": ["infantry", "melee", "light"],
+        "counter_bonuses": {"shielded": 0.45, "support": 0.25},
+        "counter_summary": "Excels against shielded troops and exposed support units.",
+        "weak_against": "Vulnerable to rifles and heavy gunners before reaching melee range.",
         "names": {
             "atreides": "Atreides Bladesman",
             "harkonnen": "Harkonnen Enforcer",
@@ -348,6 +352,10 @@ UNIT_TYPES = {
     "maula_pistol": {
         "category": "military",
         "tier": 2,
+        "combat_tags": ["infantry", "ranged", "light"],
+        "counter_bonuses": {"melee": 0.30, "light": 0.12},
+        "counter_summary": "Reliable against lightly protected melee troops and raiders.",
+        "weak_against": "Struggles against personal shields and aerial attacks.",
         "names": {
             "atreides": "Atreides Guard",
             "harkonnen": "Harkonnen Gunman",
@@ -366,9 +374,75 @@ UNIT_TYPES = {
         "training_time": 18,
         "cost": {"iron": 55, "wood": 35, "water": 12, "spice": 0},
     },
+    "rpg_trooper": {
+        "category": "military",
+        "tier": 3,
+        "role": "Anti-air and Anti-vehicle Infantry",
+        "combat_tags": ["infantry", "ranged", "support", "anti_air"],
+        "counter_bonuses": {"aircraft": 0.55, "vehicle": 0.40},
+        "counter_summary": "Guided launchers punish aircraft, Carryalls, and ground vehicles.",
+        "weak_against": "Slow firing teams are vulnerable to melee troops and fast raiders.",
+        "ability_summary": "Long-range launcher teams that protect ground forces from aircraft and heavy machinery.",
+        "abilities": [
+            "Deals +55% damage against aircraft.",
+            "Deals +40% damage against ground vehicles.",
+        ],
+        "names": {
+            "atreides": "Atreides Hawk Missile Team",
+            "harkonnen": "Harkonnen Rocket Trooper",
+            "fremen": "Fremen Thumper Launcher",
+        },
+        "unlock_building": "barracks",
+        "unlock_level": 4,
+        "health": 46,
+        "damage": 28,
+        "armor": 1,
+        "shield": 0,
+        "shield_piercing": 0.18,
+        "speed": 7,
+        "carry": 12,
+        "water_upkeep": 0.7,
+        "training_time": 34,
+        "cost": {"iron": 115, "wood": 80, "water": 28, "spice": 12, "melange": 1},
+    },
+    "heavy_gunner": {
+        "category": "military",
+        "tier": 3,
+        "role": "Infantry Suppression",
+        "combat_tags": ["infantry", "ranged", "heavy_weapon"],
+        "counter_bonuses": {"light": 0.45, "melee": 0.30},
+        "counter_summary": "Suppresses masses of light infantry and approaching melee troops.",
+        "weak_against": "A static firing position is vulnerable to aircraft and shielded elites.",
+        "ability_summary": "Heavy automatic weapons control open ground and break lightly armored formations.",
+        "abilities": [
+            "Deals +45% damage against light units.",
+            "Deals +30% damage against melee troops.",
+        ],
+        "names": {
+            "atreides": "Atreides Support Gunner",
+            "harkonnen": "Harkonnen Suppressor",
+            "fremen": "Fremen Repeater Gunner",
+        },
+        "unlock_building": "barracks",
+        "unlock_level": 5,
+        "health": 68,
+        "damage": 31,
+        "armor": 3,
+        "shield": 0,
+        "shield_piercing": 0.06,
+        "speed": 6,
+        "carry": 10,
+        "water_upkeep": 0.85,
+        "training_time": 42,
+        "cost": {"iron": 155, "wood": 105, "water": 36, "spice": 18, "melange": 2},
+    },
     "elite_guard": {
         "category": "military",
         "tier": 4,
+        "combat_tags": ["infantry", "melee", "shielded", "heavy"],
+        "counter_bonuses": {"ranged": 0.35, "light": 0.20},
+        "counter_summary": "Personal shields dominate conventional ranged troops and light formations.",
+        "weak_against": "Slow blades and dedicated anti-shield troops bypass much of the protection.",
         "role": "Elite anti-shield infantry",
         "ability_summary": "Advanced infantry with personal shielding and faction-specific battlefield doctrine.",
         "abilities": [
@@ -402,6 +476,10 @@ UNIT_TYPES = {
     "influence_spy": {
         "category": "influence",
         "tier": 3,
+        "combat_tags": ["infantry", "support", "light"],
+        "counter_bonuses": {},
+        "counter_summary": "A reconnaissance and influence specialist, not a frontline fighter.",
+        "weak_against": "Vulnerable to every dedicated combat unit.",
         "role": "Scouting and Influence",
         "ability_summary": "Scouts desert tiles to reveal exact resources and defender strength. Future missions will reduce enemy village loyalty.",
         "abilities": [
@@ -429,6 +507,10 @@ UNIT_TYPES = {
     },
     "scout_ornithopter": {
         "category": "vehicle", "tier": 3, "role": "Aerial Reconnaissance",
+        "combat_tags": ["aircraft", "vehicle", "recon", "light"],
+        "counter_bonuses": {},
+        "counter_summary": "Avoids battle and supplies intelligence for choosing the right counters.",
+        "weak_against": "Extremely vulnerable to RPG and missile teams.",
         "ability_summary": "Fast scouting aircraft that reveals blooms, defenders, garrisons, and resources.",
         "abilities": ["Can perform scout missions.", "Much faster than ground scouts over long distances."],
         "names": {"atreides": "Scout Ornithopter", "harkonnen": "Scout Ornithopter", "fremen": "Scout Ornithopter"},
@@ -440,6 +522,10 @@ UNIT_TYPES = {
     },
     "assault_ornithopter": {
         "category": "vehicle", "tier": 4, "role": "Fast Air Assault",
+        "combat_tags": ["aircraft", "vehicle", "combat_air"],
+        "counter_bonuses": {"infantry": 0.35, "support": 0.45, "harvester": 0.50},
+        "counter_summary": "Strafes infantry, launcher teams, and exposed harvesters.",
+        "weak_against": "RPG and missile teams inflict severe anti-air damage.",
         "ability_summary": "Armed ornithopter for raids, bloom capture, and rapid reinforcement.",
         "abilities": ["Can raid and capture large Spice Blooms.", "Carries a small amount of captured resources."],
         "names": {"atreides": "Assault Ornithopter", "harkonnen": "Assault Ornithopter", "fremen": "Assault Ornithopter"},
@@ -451,6 +537,10 @@ UNIT_TYPES = {
     },
     "carryall": {
         "category": "vehicle", "tier": 5, "role": "Long-range Transport",
+        "combat_tags": ["aircraft", "vehicle", "transport", "heavy"],
+        "counter_bonuses": {},
+        "counter_summary": "Strategic transport with no offensive counter role.",
+        "weak_against": "A valuable, unarmed target for RPG teams and assault aircraft.",
         "ability_summary": "Carries ground forces at flight speed and is required to transport a Spice Harvester.",
         "abilities": ["Transports up to 25 ground units per Carryall.", "One Carryall is required per Harvester."],
         "names": {"atreides": "Carryall", "harkonnen": "Carryall", "fremen": "Carryall"},
@@ -462,6 +552,10 @@ UNIT_TYPES = {
     },
     "spice_harvester": {
         "category": "vehicle", "tier": 5, "role": "Large Bloom Harvester",
+        "combat_tags": ["vehicle", "ground_vehicle", "harvester", "heavy"],
+        "counter_bonuses": {},
+        "counter_summary": "Industrial support vehicle with no offensive counter role.",
+        "weak_against": "Must be protected from RPG teams, aircraft, and raiders.",
         "ability_summary": "Extracts large Spice Blooms after capture. Must travel with a Carryall.",
         "abilities": ["Harvests up to 300 Spice Sand per mission.", "Cannot travel without a Carryall."],
         "names": {"atreides": "Spice Harvester", "harkonnen": "Spice Harvester", "fremen": "Spice Harvester"},
@@ -500,9 +594,21 @@ def faction_unit_stat(unit_key, stat, faction_slug=None):
 
 
 NPC_UNIT_TYPES = {
-    "raider": {"name": "Raiders", "singular": "Raider", "attack": 12, "defense": 18, "health": 35},
-    "smuggler": {"name": "Smugglers", "singular": "Smuggler", "attack": 18, "defense": 12, "health": 25},
-    "bandit": {"name": "Bandits", "singular": "Bandit", "attack": 8, "defense": 10, "health": 20},
+    "raider": {"name": "Raiders", "singular": "Raider", "attack": 12, "defense": 18, "health": 35, "combat_tags": ["infantry", "melee", "light"], "counter_bonuses": {"support": 0.25}},
+    "smuggler": {"name": "Smugglers", "singular": "Smuggler", "attack": 18, "defense": 12, "health": 25, "combat_tags": ["infantry", "ranged", "light"], "counter_bonuses": {"melee": 0.20}},
+    "bandit": {"name": "Bandits", "singular": "Bandit", "attack": 8, "defense": 10, "health": 20, "combat_tags": ["infantry", "melee", "light"], "counter_bonuses": {}},
+}
+
+COMBAT_TAG_LABELS = {
+    "aircraft": "aircraft",
+    "vehicle": "vehicles",
+    "shielded": "shielded troops",
+    "support": "support units",
+    "melee": "melee troops",
+    "ranged": "ranged troops",
+    "light": "light units",
+    "infantry": "infantry",
+    "harvester": "Spice Harvesters",
 }
 
 TUTORIAL_GUIDES = {
@@ -2014,6 +2120,62 @@ def npc_combat_profile(units):
     }
 
 
+def combat_unit_body(unit_key, is_player, research_levels=None):
+    if is_player:
+        return (
+            effective_unit_stat(unit_key, "health", research_levels if research_levels is not None else {})
+            + effective_unit_stat(unit_key, "armor", research_levels if research_levels is not None else {}) * 4
+            + effective_unit_stat(unit_key, "shield", research_levels if research_levels is not None else {})
+        )
+    config = NPC_UNIT_TYPES[unit_key]
+    return config["health"] + config["defense"] * 0.45
+
+
+def combat_unit_damage(unit_key, is_player, research_levels=None):
+    if is_player:
+        return effective_unit_stat(unit_key, "damage", research_levels if research_levels is not None else {})
+    return NPC_UNIT_TYPES[unit_key]["attack"]
+
+
+def counter_attack_bonus(attacker_units, defender_units, attacker_research=None, defender_research=None, *, attacker_is_player=True, defender_is_player=False):
+    """Return a composition-weighted damage bonus for favorable unit matchups."""
+    attacker_units = normalize_player_units(attacker_units) if attacker_is_player else normalize_npc_units(attacker_units)
+    defender_units = normalize_player_units(defender_units) if defender_is_player else normalize_npc_units(defender_units)
+    defender_weights = []
+    defender_body = 0.0
+    for key, amount in defender_units.items():
+        body = combat_unit_body(key, defender_is_player, defender_research) * amount
+        config = UNIT_TYPES[key] if defender_is_player else NPC_UNIT_TYPES[key]
+        defender_weights.append((body, set(config.get("combat_tags", []))))
+        defender_body += body
+    if defender_body <= 0:
+        return 0.0
+
+    base_damage = bonus_damage = 0.0
+    for key, amount in attacker_units.items():
+        config = UNIT_TYPES[key] if attacker_is_player else NPC_UNIT_TYPES[key]
+        counters = config.get("counter_bonuses", {})
+        damage = combat_unit_damage(key, attacker_is_player, attacker_research) * amount
+        base_damage += damage
+        if not counters or damage <= 0:
+            continue
+        weighted_bonus = 0.0
+        for body, tags in defender_weights:
+            best_match = max((counters.get(tag, 0) for tag in tags), default=0)
+            weighted_bonus += body / defender_body * best_match
+        bonus_damage += damage * weighted_bonus
+    return min(bonus_damage / max(base_damage, 1), 0.75)
+
+
+def force_counter_labels(units):
+    tags = set()
+    for key, amount in normalize_player_units(units).items():
+        if amount <= 0:
+            continue
+        tags.update(UNIT_TYPES[key].get("counter_bonuses", {}))
+    return [COMBAT_TAG_LABELS.get(tag, tag.replace("_", " ")) for tag in sorted(tags)]
+
+
 def distribute_npc_losses(units, survival_ratio):
     survivors = {}
     for key, amount in normalize_npc_units(units).items():
@@ -2031,6 +2193,14 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
     defender_units = normalize_player_units(defender_units) if defender_is_player else normalize_npc_units(defender_units)
     attacker = player_combat_profile(attacker_units, attacker_research)
     defender = player_combat_profile(defender_units, defender_research) if defender_is_player else npc_combat_profile(defender_units)
+    attacker_counter_bonus = counter_attack_bonus(
+        attacker_units, defender_units, attacker_research, defender_research,
+        attacker_is_player=True, defender_is_player=defender_is_player,
+    )
+    defender_counter_bonus = counter_attack_bonus(
+        defender_units, attacker_units, defender_research, attacker_research,
+        attacker_is_player=defender_is_player, defender_is_player=True,
+    )
     attacker_body = attacker["body"]
     defender_body = defender["body"]
     attacker_shield = attacker["shield"]
@@ -2052,15 +2222,17 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
             "attacker_survivors": attacker_units, "defender_survivors": {},
             "attacker_shield_absorbed": 0, "defender_shield_absorbed": 0,
             "attacker_piercing_percent": 0, "defender_piercing_percent": 0,
+            "attacker_counter_bonus_percent": round(attacker_counter_bonus * 100),
+            "defender_counter_bonus_percent": round(defender_counter_bonus * 100),
         }
 
     for round_number in range(1, max_rounds + 1):
         attacker_strength = max(attacker_body / max(attacker["body"], 1), 0.18)
         defender_strength = max(defender_body / max(defender["body"], 1), 0.18)
-        attacker_damage = attacker["attack"] * attacker_strength
-        defender_damage = defender["attack"] * defender_strength
-        attacker_piercing = attacker["piercing_attack"] * attacker_strength
-        defender_piercing = defender["piercing_attack"] * defender_strength
+        attacker_damage = attacker["attack"] * (1 + attacker_counter_bonus) * attacker_strength
+        defender_damage = defender["attack"] * (1 + defender_counter_bonus) * defender_strength
+        attacker_piercing = attacker["piercing_attack"] * (1 + attacker_counter_bonus) * attacker_strength
+        defender_piercing = defender["piercing_attack"] * (1 + defender_counter_bonus) * defender_strength
         next_defender_body, next_defender_shield, absorbed_by_defender = apply_damage(
             defender_body, defender_shield, attacker_damage, attacker_piercing
         )
@@ -2083,8 +2255,8 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
 
     attacker_ratio = min(attacker_body / max(attacker["body"], 1), 1)
     defender_ratio = min(defender_body / max(defender["body"], 1), 1)
-    attacker_score = attacker_body + attacker_shield + attacker["attack"] * 0.75
-    defender_score = defender_body + defender_shield + defender["attack"] * 0.75
+    attacker_score = attacker_body + attacker_shield + attacker["attack"] * (1 + attacker_counter_bonus) * 0.75
+    defender_score = defender_body + defender_shield + defender["attack"] * (1 + defender_counter_bonus) * 0.75
     victory = defender_body <= 0 or (attacker_body > 0 and attacker_score > defender_score * 1.05)
     attacker_survivors = distribute_losses(attacker_units, attacker_ratio)
     defender_survivors = distribute_losses(defender_units, defender_ratio) if defender_is_player else distribute_npc_losses(defender_units, defender_ratio)
@@ -2098,6 +2270,8 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
         "defender_shield_absorbed": round(defender_absorbed, 1),
         "attacker_piercing_percent": round(attacker["piercing_attack"] / max(attacker["attack"], 1) * 100),
         "defender_piercing_percent": round(defender["piercing_attack"] / max(defender["attack"], 1) * 100),
+        "attacker_counter_bonus_percent": round(attacker_counter_bonus * 100),
+        "defender_counter_bonus_percent": round(defender_counter_bonus * 100),
     }
 
 
@@ -2497,6 +2671,8 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "armor": effective_unit_stat(key, "armor", research_levels),
                 "shield": effective_unit_stat(key, "shield", research_levels),
                 "shield_piercing": round(faction_unit_stat(key, "shield_piercing", faction_slug) * 100),
+                "counter_summary": config.get("counter_summary"),
+                "weak_against": config.get("weak_against"),
                 "speed": faction_unit_stat(key, "speed", faction_slug),
                 "carry": config["carry"],
                 "water_upkeep": faction_unit_stat(key, "water_upkeep", faction_slug),
@@ -3648,12 +3824,18 @@ def plan_map_mission(tile_id):
         age = max(int((now - parse_time(intel["scouted_at"])).total_seconds()), 0) if intel and not owned else 0 if owned else None
         stale = age is not None and age >= 3600
         defense = None
+        matchup_bonus = None
         if intel:
             if intel["controller_village_id"]:
                 defender_research = research if owned else None
-                defense = player_unit_summary(player_units_from_json(intel["garrison_json"]), defender_research)["defense"]
+                defender_force = player_units_from_json(intel["garrison_json"])
+                defense = player_unit_summary(defender_force, defender_research)["defense"]
+                matchup_bonus = counter_attack_bonus(selected, defender_force, research, defender_research, defender_is_player=True)
             else:
-                defense = npc_units_defense(npc_units_for_source(intel))
+                defender_force = npc_units_for_source(intel)
+                defense = npc_units_defense(defender_force)
+                matchup_bonus = counter_attack_bonus(selected, defender_force, research)
+        effective_attack = attack * (1 + (matchup_bonus or 0))
         if mission not in ("raid", "capture"):
             risk = "No combat estimate for this mission"
         elif defense is None:
@@ -3662,9 +3844,9 @@ def plan_map_mission(tile_id):
             risk = "Uncertain — scouting is over an hour old"
         elif intel["controller_village_id"] and not owned:
             risk = "Uncertain — enemy research and faction bonuses are not included"
-        elif attack < defense:
+        elif effective_attack < defense:
             risk = "High — selected attack is below known defense"
-        elif attack < defense * 1.3:
+        elif effective_attack < defense * 1.3:
             risk = "Moderate — little margin above known defense"
         else:
             risk = "Lower — margin above known defense; losses remain possible"
@@ -3672,6 +3854,8 @@ def plan_map_mission(tile_id):
         return jsonify(attack=round(attack, 1), durability=round(durability, 1), carry=carry,
                        shield=round(combat_profile["shield"], 1),
                        shield_piercing=round(combat_profile["piercing_attack"] / max(combat_profile["attack"], 1) * 100),
+                       counter_targets=force_counter_labels(selected),
+                       counter_bonus=round(matchup_bonus * 100) if matchup_bonus is not None else None,
                        travel_seconds=travel, arrival_at=(now + timedelta(seconds=travel)).isoformat(),
                        return_at=None if mission in ("capture", "reinforce") else (now + timedelta(seconds=travel * 2 + harvest_duration)).isoformat(),
                        known_defense=defense, intel_age_seconds=age, stale=stale, risk=risk,
