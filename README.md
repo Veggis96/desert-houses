@@ -19,6 +19,8 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Spend Melange on advanced troops, shield and influence research, and high-level infrastructure upgrades
 - Barracks requires Command Center level 2
 - Train faction-named starter units with health, damage, armor, shield, speed, carry, and Water upkeep stats
+- Unlock faction elite infantry at Barracks level 6 and Personal Shields level 2: Atreides Shield Guard, Harkonnen Devastator, or Fremen Fedaykin
+- Resolve raids and bloom captures over simultaneous combat rounds with real shield absorption, slow-blade penetration, retreats, and detailed reports
 - Train units through a separate sequential unit queue
 - Research construction speed, unit training speed, health, damage, armor, shields, and Bene Gesserit influence
 - Research runs through a separate research queue and can unlock faction-specific influence buildings
@@ -62,7 +64,6 @@ The SQLite database is created automatically as `game.db` on first run.
 
 ## Suggested Next Features
 
-- Higher-tier shielded units and combat resolution
 - Spy missions, Reverend Mother loyalty reduction, and village capture
 - Officer promotion/demotion and alliance management tools
 - Role management for promoting officers and removing inactive members
@@ -94,6 +95,16 @@ Map mission forms preview the selected force's attack, durability, carrying capa
 - Fremen infantry: +20% ground speed, -20% Water upkeep.
 
 Existing production bonuses remain. Aircraft and harvesters do not gain infantry bonuses. Faction stats appear on training screens and apply to combat, movement and upkeep, including existing armies.
+
+## Combat V2
+
+Personal shields now absorb conventional damage before health. Each unit has a shield-piercing share: knife fighters and elite slow-blade troops bypass more shielding than projectile-focused troops. Personal Shields research increases real shield capacity and unlocks elite infantry at level 2 alongside Barracks level 6.
+
+- Atreides Shield Guards emphasize health, armor, and shield capacity.
+- Harkonnen Devastators emphasize raw damage at higher Water upkeep.
+- Fremen Fedaykin emphasize speed and shield penetration with lighter shielding.
+
+Raids and Large Bloom captures resolve up to six simultaneous rounds. Reports record damage per round, shield absorption, penetration, casualties, survivors, and retreating forces. Surviving attackers return after a failed operation; surviving player defenders retreat home after losing a controlled bloom.
 
 Alliance leaders and officers can set a target of 1–20 controlled Large Spice Blooms on the alliance page. Progress counts territory held by current members and falls when control or membership changes. This is a shared territorial goal, with no automatic resource reward.
 

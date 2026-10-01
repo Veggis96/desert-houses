@@ -484,6 +484,16 @@ tbody tr:hover { background: #ffffff03; }
 .deathstill-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .deathstill-action input { width: 100%; }
 @media(max-width:760px) { .deathstill-overview { grid-template-columns: 1fr; } .deathstill-art { min-height: 110px; } }
+.combat-summary-panel { margin-bottom: 18px; border-left: 3px solid #78a9b4; }
+.combat-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+.combat-metrics > div { display: grid; gap: 3px; padding: 12px; background: #78a9b40b; border: 1px solid #78a9b433; border-radius: 6px; }
+.combat-metrics span { color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.combat-metrics strong { color: #acd3da; font-size: 18px; }
+.combat-rounds { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 7px; }
+.combat-rounds > div { display: grid; gap: 2px; padding: 10px; background: #ffffff04; border: 1px solid var(--line); border-radius: 5px; font-size: 11px; }
+.combat-rounds strong { color: var(--accent); }
+.combat-rounds span, .combat-rounds small { color: var(--muted); }
+@media(max-width:760px) { .combat-metrics { grid-template-columns: 1fr; } }
 .yield-estimate { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 10px 0; padding: 10px 12px; background: #d7b5780a; border: 1px solid #d7b57830; border-radius: 5px; font-size: 12px; }
 .yield-estimate strong { color: var(--accent); font-size: 14px; }
 .yield-estimate small { grid-column: 1 / -1; color: var(--muted); }

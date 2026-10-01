@@ -33,19 +33,50 @@
         <strong>{% if report.is_read %}Read{% else %}Unread{% endif %}</strong>
         <small>Opened reports are marked read</small>
     </article>
+    {% if combat.round_count is defined %}
+    <article class="resource-card">
+        <span>Combat Rounds</span>
+        <strong>{{ combat.round_count }}</strong>
+        <small>{{ combat.defender_shield_absorbed|round|int }} damage stopped by enemy shields</small>
+    </article>
+    {% endif %}
 </section>
+
+{% if combat.rounds %}
+<section class="panel combat-summary-panel">
+    <div class="section-heading">
+        <div><p class="eyebrow">Combat V2</p><h2>Shield and damage summary</h2></div>
+        <p class="muted">Your force used {{ combat.attacker_piercing_percent }}% shield-piercing damage.</p>
+    </div>
+    <div class="combat-metrics">
+        <div><span>Your shields absorbed</span><strong>{{ combat.attacker_shield_absorbed|round|int }}</strong></div>
+        <div><span>Enemy shields absorbed</span><strong>{{ combat.defender_shield_absorbed|round|int }}</strong></div>
+        <div><span>Enemy penetration</span><strong>{{ combat.defender_piercing_percent }}%</strong></div>
+    </div>
+    <div class="combat-rounds" aria-label="Combat rounds">
+        {% for round in combat.rounds %}
+        <div>
+            <strong>Round {{ round.round }}</strong>
+            <span>You dealt {{ round.attacker_damage|round|int }}</span>
+            <span>Enemy dealt {{ round.defender_damage|round|int }}</span>
+            <small>Shields stopped {{ round.defender_shield_absorbed|round|int }} / {{ round.attacker_shield_absorbed|round|int }}</small>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 
 <div class="two-column spaced-panel">
     <section class="panel">
         <p class="eyebrow">Your Troops</p>
         <h2>Sent</h2>
         <table>
-            <thead><tr><th>Unit</th><th>Amount</th></tr></thead>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Shield</th><th>Pierce</th></tr></thead>
             <tbody>
                 {% for unit in sent_units %}
-                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td></tr>
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.shield }}</td><td>{{ unit.shield_piercing }}%</td></tr>
                 {% else %}
-                    <tr><td colspan="2">No units recorded.</td></tr>
+                    <tr><td colspan="5">No units recorded.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -55,12 +86,12 @@
         <p class="eyebrow">Your Troops</p>
         <h2>Lost</h2>
         <table>
-            <thead><tr><th>Unit</th><th>Amount</th></tr></thead>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Shield</th></tr></thead>
             <tbody>
                 {% for unit in lost_units %}
-                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td></tr>
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.shield }}</td></tr>
                 {% else %}
-                    <tr><td colspan="2">No losses.</td></tr>
+                    <tr><td colspan="3">No losses.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -72,12 +103,12 @@
         <p class="eyebrow">Enemy Defenders</p>
         <h2>{% if report.report_type == 'scout' %}Observed{% else %}Before Battle{% endif %}</h2>
         <table>
-            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th></tr></thead>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th><th>Shield</th></tr></thead>
             <tbody>
                 {% for unit in enemy_before_units %}
-                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td></tr>
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td><td>{{ unit.shield|default(0) }}</td></tr>
                 {% else %}
-                    <tr><td colspan="5">No defenders observed.</td></tr>
+                    <tr><td colspan="6">No defenders observed.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -87,13 +118,13 @@
         <p class="eyebrow">Enemy Defenders</p>
         <h2>{% if report.report_type == 'scout' %}Remaining{% else %}Lost{% endif %}</h2>
         <table>
-            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th></tr></thead>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Atk</th><th>Def</th><th>HP</th><th>Shield</th></tr></thead>
             <tbody>
                 {% set shown_units = enemy_after_units if report.report_type == 'scout' else enemy_lost_units %}
                 {% for unit in shown_units %}
-                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td></tr>
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.attack }}</td><td>{{ unit.defense }}</td><td>{{ unit.health }}</td><td>{{ unit.shield|default(0) }}</td></tr>
                 {% else %}
-                    <tr><td colspan="5">No enemy losses.</td></tr>
+                    <tr><td colspan="6">No enemy losses.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -105,12 +136,12 @@
         <p class="eyebrow">Your Troops</p>
         <h2>Survived</h2>
         <table>
-            <thead><tr><th>Unit</th><th>Amount</th></tr></thead>
+            <thead><tr><th>Unit</th><th>Amount</th><th>Shield</th></tr></thead>
             <tbody>
                 {% for unit in survived_units %}
-                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td></tr>
+                    <tr><td>{{ unit.name }}</td><td>{{ unit.amount }}</td><td>{{ unit.shield }}</td></tr>
                 {% else %}
-                    <tr><td colspan="2">No survivors.</td></tr>
+                    <tr><td colspan="3">No survivors.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

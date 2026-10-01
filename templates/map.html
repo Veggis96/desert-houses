@@ -227,7 +227,7 @@
                 <input type="hidden" name="next" value="{{ request.path }}">
                 <p class="eyebrow">Send Raid</p>
                 {% for unit in unit_cards %}
-                    <label for="unit-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | dmg {{ unit.damage }} | durability {{ unit.durability }} | carry {{ unit.carry }}</label>
+                    <label for="unit-{{ unit.key }}">{{ unit.name }} owned {{ unit.amount }} | dmg {{ unit.damage }} | shield {{ unit.shield }} | pierce {{ unit.shield_piercing }}% | durability {{ unit.durability }} | carry {{ unit.carry }}</label>
                     <input id="unit-{{ unit.key }}" name="unit_{{ unit.key }}" type="number" value="0" min="0" max="{{ unit.amount }}" data-raid-unit data-damage="{{ unit.damage }}" data-durability="{{ unit.durability }}" data-carry="{{ unit.carry }}" data-speed="{{ unit.speed }}">
                 {% endfor %}
                 <div class="raid-presets" aria-label="Raid presets">

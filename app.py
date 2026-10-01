@@ -338,6 +338,7 @@ UNIT_TYPES = {
         "damage": 12,
         "armor": 1,
         "shield": 0,
+        "shield_piercing": 0.35,
         "speed": 12,
         "carry": 20,
         "water_upkeep": 0.25,
@@ -358,11 +359,45 @@ UNIT_TYPES = {
         "damage": 18,
         "armor": 0,
         "shield": 0,
+        "shield_piercing": 0.08,
         "speed": 10,
         "carry": 25,
         "water_upkeep": 0.35,
         "training_time": 18,
         "cost": {"iron": 55, "wood": 35, "water": 12, "spice": 0},
+    },
+    "elite_guard": {
+        "category": "military",
+        "tier": 4,
+        "role": "Elite anti-shield infantry",
+        "ability_summary": "Advanced infantry with personal shielding and faction-specific battlefield doctrine.",
+        "abilities": [
+            "Personal shield absorbs conventional damage before health.",
+            "Slow-blade training bypasses part of enemy shielding.",
+        ],
+        "names": {
+            "atreides": "Atreides Shield Guard",
+            "harkonnen": "Harkonnen Devastator",
+            "fremen": "Fremen Fedaykin",
+        },
+        "unlock_building": "barracks",
+        "unlock_level": 6,
+        "unlock_research": {"unit_shield": 2},
+        "health": 100,
+        "damage": 34,
+        "armor": 4,
+        "shield": 28,
+        "shield_piercing": 0.25,
+        "speed": 10,
+        "carry": 18,
+        "water_upkeep": 1.0,
+        "training_time": 60,
+        "cost": {"iron": 220, "wood": 160, "water": 55, "spice": 35, "melange": 4},
+        "faction_stats": {
+            "atreides": {"health": 110, "damage": 28, "armor": 5, "shield": 36, "shield_piercing": 0.25, "speed": 9, "water_upkeep": 0.9},
+            "harkonnen": {"health": 92, "damage": 40, "armor": 4, "shield": 28, "shield_piercing": 0.15, "speed": 8, "water_upkeep": 1.3},
+            "fremen": {"health": 96, "damage": 34, "armor": 3, "shield": 16, "shield_piercing": 0.55, "speed": 14, "water_upkeep": 0.8},
+        },
     },
     "influence_spy": {
         "category": "influence",
@@ -385,6 +420,7 @@ UNIT_TYPES = {
         "damage": 4,
         "armor": 0,
         "shield": 0,
+        "shield_piercing": 0.2,
         "speed": 18,
         "carry": 5,
         "water_upkeep": 0.5,
@@ -398,6 +434,7 @@ UNIT_TYPES = {
         "names": {"atreides": "Scout Ornithopter", "harkonnen": "Scout Ornithopter", "fremen": "Scout Ornithopter"},
         "unlock_building": "flight_works", "unlock_level": 1, "can_scout": True,
         "health": 55, "damage": 6, "armor": 2, "shield": 0, "speed": 34, "carry": 10,
+        "shield_piercing": 0.1,
         "water_upkeep": 0.4, "training_time": 40,
         "cost": {"iron": 240, "wood": 140, "water": 60, "spice": 30, "melange": 3},
     },
@@ -408,6 +445,7 @@ UNIT_TYPES = {
         "names": {"atreides": "Assault Ornithopter", "harkonnen": "Assault Ornithopter", "fremen": "Assault Ornithopter"},
         "unlock_building": "flight_works", "unlock_level": 3, "can_raid": True,
         "health": 95, "damage": 38, "armor": 5, "shield": 2, "speed": 26, "carry": 35,
+        "shield_piercing": 0.12,
         "water_upkeep": 1.0, "training_time": 70,
         "cost": {"iron": 520, "wood": 280, "water": 120, "spice": 70, "melange": 10},
     },
@@ -418,6 +456,7 @@ UNIT_TYPES = {
         "names": {"atreides": "Carryall", "harkonnen": "Carryall", "fremen": "Carryall"},
         "unlock_building": "flight_works", "unlock_level": 5, "is_transport": True, "transport_capacity": 25,
         "health": 150, "damage": 0, "armor": 7, "shield": 3, "speed": 24, "carry": 80,
+        "shield_piercing": 0,
         "water_upkeep": 1.4, "training_time": 95,
         "cost": {"iron": 850, "wood": 440, "water": 180, "spice": 110, "melange": 18},
     },
@@ -428,6 +467,7 @@ UNIT_TYPES = {
         "names": {"atreides": "Spice Harvester", "harkonnen": "Spice Harvester", "fremen": "Spice Harvester"},
         "unlock_building": "flight_works", "unlock_level": 4, "is_harvester": True,
         "health": 180, "damage": 0, "armor": 8, "shield": 0, "speed": 4, "carry": 300,
+        "shield_piercing": 0,
         "water_upkeep": 1.8, "training_time": 110,
         "cost": {"iron": 950, "wood": 520, "water": 220, "spice": 130, "melange": 20},
     },
@@ -453,8 +493,10 @@ def village_faction(db, village):
 
 
 def faction_unit_stat(unit_key, stat, faction_slug=None):
-    multiplier = FACTION_ABILITIES.get(faction_slug, {}).get(stat, 1) if UNIT_TYPES[unit_key]["category"] == "military" else 1
-    return round(UNIT_TYPES[unit_key][stat] * multiplier, 3)
+    config = UNIT_TYPES[unit_key]
+    base_value = config.get("faction_stats", {}).get(faction_slug, {}).get(stat, config.get(stat, 0))
+    multiplier = FACTION_ABILITIES.get(faction_slug, {}).get(stat, 1) if config["category"] == "military" else 1
+    return round(base_value * multiplier, 3)
 
 
 NPC_UNIT_TYPES = {
@@ -947,6 +989,14 @@ def init_db():
                 enemy_before INTEGER NOT NULL DEFAULT 0,
                 enemy_after INTEGER NOT NULL DEFAULT 0,
                 enemy_lost INTEGER NOT NULL DEFAULT 0,
+                enemy_before_json TEXT NOT NULL DEFAULT '{}',
+                enemy_after_json TEXT NOT NULL DEFAULT '{}',
+                enemy_lost_json TEXT NOT NULL DEFAULT '{}',
+                enemy_player_before_json TEXT NOT NULL DEFAULT '{}',
+                enemy_player_after_json TEXT NOT NULL DEFAULT '{}',
+                enemy_player_lost_json TEXT NOT NULL DEFAULT '{}',
+                enemy_faction_slug TEXT,
+                combat_json TEXT NOT NULL DEFAULT '{}',
                 loot_iron REAL NOT NULL DEFAULT 0,
                 loot_wood REAL NOT NULL DEFAULT 0,
                 loot_water REAL NOT NULL DEFAULT 0,
@@ -1017,6 +1067,11 @@ def init_db():
         add_column_if_missing(db, "battle_reports", "enemy_before_json TEXT NOT NULL DEFAULT '{}'")
         add_column_if_missing(db, "battle_reports", "enemy_after_json TEXT NOT NULL DEFAULT '{}'")
         add_column_if_missing(db, "battle_reports", "enemy_lost_json TEXT NOT NULL DEFAULT '{}'")
+        add_column_if_missing(db, "battle_reports", "enemy_player_before_json TEXT NOT NULL DEFAULT '{}'")
+        add_column_if_missing(db, "battle_reports", "enemy_player_after_json TEXT NOT NULL DEFAULT '{}'")
+        add_column_if_missing(db, "battle_reports", "enemy_player_lost_json TEXT NOT NULL DEFAULT '{}'")
+        add_column_if_missing(db, "battle_reports", "enemy_faction_slug TEXT")
+        add_column_if_missing(db, "battle_reports", "combat_json TEXT NOT NULL DEFAULT '{}'")
 
         for slug, name, description in FACTIONS:
             db.execute(
@@ -1452,8 +1507,13 @@ def unit_amount_total(units):
 
 
 def report_summary(report):
-    enemy_before_units = npc_units_from_json(report["enemy_before_json"]) or generate_npc_units(report["enemy_before"], random.Random(report["id"] * 17))
-    enemy_lost_units = npc_units_from_json(report["enemy_lost_json"]) or generate_npc_units(report["enemy_lost"], random.Random(report["id"] * 23))
+    enemy_player_before = player_units_from_json(report["enemy_player_before_json"]) if "enemy_player_before_json" in report.keys() else {}
+    if enemy_player_before:
+        enemy_before_units = enemy_player_before
+        enemy_lost_units = player_units_from_json(report["enemy_player_lost_json"])
+    else:
+        enemy_before_units = npc_units_from_json(report["enemy_before_json"]) or generate_npc_units(report["enemy_before"], random.Random(report["id"] * 17))
+        enemy_lost_units = npc_units_from_json(report["enemy_lost_json"]) or generate_npc_units(report["enemy_lost"], random.Random(report["id"] * 23))
     return {
         "sent_count": unit_amount_total(json.loads(report["units_sent_json"] or "{}")),
         "lost_count": unit_amount_total(json.loads(report["units_lost_json"] or "{}")),
@@ -1923,8 +1983,122 @@ def player_unit_report_rows(units, faction_slug, research_levels=None):
             "attack": effective_unit_stat(key, "damage", research_levels if research_levels is not None else {}),
             "defense": round(effective_unit_stat(key, "damage", research_levels if research_levels is not None else {}) * 0.7 + effective_unit_stat(key, "armor", research_levels if research_levels is not None else {}) * 5 + effective_unit_stat(key, "shield", research_levels if research_levels is not None else {}) * 3, 1),
             "health": effective_unit_stat(key, "health", research_levels if research_levels is not None else {}),
+            "shield": effective_unit_stat(key, "shield", research_levels if research_levels is not None else {}),
+            "shield_piercing": round(faction_unit_stat(key, "shield_piercing", faction_slug) * 100),
         })
     return rows
+
+
+def player_combat_profile(units, research_levels=None):
+    research_levels = research_levels if research_levels is not None else {}
+    units = normalize_player_units(units)
+    attack = body = shield = piercing_attack = 0.0
+    for key, amount in units.items():
+        damage = effective_unit_stat(key, "damage", research_levels)
+        attack += damage * amount
+        body += (effective_unit_stat(key, "health", research_levels) + effective_unit_stat(key, "armor", research_levels) * 4) * amount
+        shield += effective_unit_stat(key, "shield", research_levels) * amount
+        piercing_attack += damage * faction_unit_stat(key, "shield_piercing", getattr(research_levels, "faction_slug", None)) * amount
+    return {"attack": attack, "body": body, "shield": shield, "piercing_attack": piercing_attack, "count": sum(units.values())}
+
+
+def npc_combat_profile(units):
+    units = normalize_npc_units(units)
+    count = sum(units.values())
+    return {
+        "attack": float(npc_units_attack(units)),
+        "body": float(npc_units_health(units) + npc_units_defense(units) * 0.45),
+        "shield": 0.0,
+        "piercing_attack": 0.0,
+        "count": count,
+    }
+
+
+def distribute_npc_losses(units, survival_ratio):
+    survivors = {}
+    for key, amount in normalize_npc_units(units).items():
+        kept = int(amount * survival_ratio)
+        if kept <= 0 and survival_ratio > 0.35 and amount > 0:
+            kept = 1
+        if kept > 0:
+            survivors[key] = min(kept, amount)
+    return survivors
+
+
+def resolve_combat(attacker_units, defender_units, attacker_research=None, defender_research=None, defender_is_player=False, max_rounds=6):
+    """Resolve simultaneous combat with shield absorption and slow-blade penetration."""
+    attacker_units = normalize_player_units(attacker_units)
+    defender_units = normalize_player_units(defender_units) if defender_is_player else normalize_npc_units(defender_units)
+    attacker = player_combat_profile(attacker_units, attacker_research)
+    defender = player_combat_profile(defender_units, defender_research) if defender_is_player else npc_combat_profile(defender_units)
+    attacker_body = attacker["body"]
+    defender_body = defender["body"]
+    attacker_shield = attacker["shield"]
+    defender_shield = defender["shield"]
+    attacker_absorbed = defender_absorbed = 0.0
+    rounds = []
+
+    def apply_damage(body, shield, incoming, piercing):
+        bypass = min(max(piercing, 0), incoming)
+        shield_hit = max(incoming - bypass, 0)
+        absorbed = min(shield, shield_hit)
+        shield -= absorbed
+        body -= bypass + max(shield_hit - absorbed, 0)
+        return max(body, 0), max(shield, 0), absorbed
+
+    if defender["body"] <= 0:
+        return {
+            "victory": True, "round_count": 0, "rounds": [],
+            "attacker_survivors": attacker_units, "defender_survivors": {},
+            "attacker_shield_absorbed": 0, "defender_shield_absorbed": 0,
+            "attacker_piercing_percent": 0, "defender_piercing_percent": 0,
+        }
+
+    for round_number in range(1, max_rounds + 1):
+        attacker_strength = max(attacker_body / max(attacker["body"], 1), 0.18)
+        defender_strength = max(defender_body / max(defender["body"], 1), 0.18)
+        attacker_damage = attacker["attack"] * attacker_strength
+        defender_damage = defender["attack"] * defender_strength
+        attacker_piercing = attacker["piercing_attack"] * attacker_strength
+        defender_piercing = defender["piercing_attack"] * defender_strength
+        next_defender_body, next_defender_shield, absorbed_by_defender = apply_damage(
+            defender_body, defender_shield, attacker_damage, attacker_piercing
+        )
+        next_attacker_body, next_attacker_shield, absorbed_by_attacker = apply_damage(
+            attacker_body, attacker_shield, defender_damage, defender_piercing
+        )
+        attacker_absorbed += absorbed_by_attacker
+        defender_absorbed += absorbed_by_defender
+        rounds.append({
+            "round": round_number,
+            "attacker_damage": round(attacker_damage, 1),
+            "defender_damage": round(defender_damage, 1),
+            "attacker_shield_absorbed": round(absorbed_by_attacker, 1),
+            "defender_shield_absorbed": round(absorbed_by_defender, 1),
+        })
+        attacker_body, attacker_shield = next_attacker_body, next_attacker_shield
+        defender_body, defender_shield = next_defender_body, next_defender_shield
+        if attacker_body <= 0 or defender_body <= 0:
+            break
+
+    attacker_ratio = min(attacker_body / max(attacker["body"], 1), 1)
+    defender_ratio = min(defender_body / max(defender["body"], 1), 1)
+    attacker_score = attacker_body + attacker_shield + attacker["attack"] * 0.75
+    defender_score = defender_body + defender_shield + defender["attack"] * 0.75
+    victory = defender_body <= 0 or (attacker_body > 0 and attacker_score > defender_score * 1.05)
+    attacker_survivors = distribute_losses(attacker_units, attacker_ratio)
+    defender_survivors = distribute_losses(defender_units, defender_ratio) if defender_is_player else distribute_npc_losses(defender_units, defender_ratio)
+    return {
+        "victory": victory,
+        "round_count": len(rounds),
+        "rounds": rounds,
+        "attacker_survivors": attacker_survivors,
+        "defender_survivors": defender_survivors,
+        "attacker_shield_absorbed": round(attacker_absorbed, 1),
+        "defender_shield_absorbed": round(defender_absorbed, 1),
+        "attacker_piercing_percent": round(attacker["piercing_attack"] / max(attacker["attack"], 1) * 100),
+        "defender_piercing_percent": round(defender["piercing_attack"] / max(defender["attack"], 1) * 100),
+    }
 
 
 def distribute_losses(sent_units, survival_ratio):
@@ -1956,7 +2130,7 @@ def unit_report_rows(units, faction_slug):
     return rows
 
 
-def create_battle_report(db, village, movement, tile, outcome, sent_units, survivors, enemy_before_units, enemy_after_units, loot, report_type="raid"):
+def create_battle_report(db, village, movement, tile, outcome, sent_units, survivors, enemy_before_units, enemy_after_units, loot, report_type="raid", *, combat=None, enemy_player_before=None, enemy_player_after=None, enemy_faction_slug=None):
     losses = unit_losses(sent_units, survivors)
     enemy_before_units = normalize_npc_units(enemy_before_units)
     enemy_after_units = normalize_npc_units(enemy_after_units)
@@ -1964,6 +2138,14 @@ def create_battle_report(db, village, movement, tile, outcome, sent_units, survi
     enemy_before = npc_units_defense(enemy_before_units)
     enemy_after = npc_units_defense(enemy_after_units)
     enemy_lost = max(enemy_before - enemy_after, 0)
+    enemy_player_before = normalize_player_units(enemy_player_before or {})
+    enemy_player_after = normalize_player_units(enemy_player_after or {})
+    enemy_player_lost = unit_losses(enemy_player_before, enemy_player_after)
+    if enemy_player_before:
+        defender_research = ResearchLevels({}, enemy_faction_slug)
+        enemy_before = int(player_unit_summary(enemy_player_before, defender_research)["defense"])
+        enemy_after = int(player_unit_summary(enemy_player_after, defender_research)["defense"])
+        enemy_lost = max(enemy_before - enemy_after, 0)
     target_name = tile_display_name(tile["tile_type"]) if tile else "Unknown Target"
     title = f"{outcome}: {target_name} ({movement['target_x']}, {movement['target_y']})"
     db.execute(
@@ -1972,8 +2154,9 @@ def create_battle_report(db, village, movement, tile, outcome, sent_units, survi
             (user_id, village_id, movement_id, title, report_type, created_at, target_x, target_y,
              target_name, outcome, units_sent_json, units_survived_json, units_lost_json,
              enemy_before, enemy_after, enemy_lost, enemy_before_json, enemy_after_json, enemy_lost_json,
+             enemy_player_before_json, enemy_player_after_json, enemy_player_lost_json, enemy_faction_slug, combat_json,
              loot_iron, loot_wood, loot_water, loot_spice)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             village["user_id"],
@@ -1995,6 +2178,11 @@ def create_battle_report(db, village, movement, tile, outcome, sent_units, survi
             npc_units_json(enemy_before_units),
             npc_units_json(enemy_after_units),
             npc_units_json(enemy_lost_units),
+            player_units_json(enemy_player_before),
+            player_units_json(enemy_player_after),
+            player_units_json(enemy_player_lost),
+            enemy_faction_slug,
+            json.dumps(combat or {}, sort_keys=True),
             loot["iron"],
             loot["wood"],
             loot["water"],
@@ -2070,34 +2258,58 @@ def process_troop_movements(db, village_id):
                 return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
                 db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, report = ? WHERE id = ?", (player_units_json(sent_units), return_at.isoformat(), "Capture no longer required. Force is returning.", movement["id"]))
                 continue
-            enemy_before_units = npc_units_for_tile(tile)
             defender_is_player = bool(tile["controller_village_id"])
-            if defender_is_player:
-                enemy_player_units = player_units_from_json(tile["garrison_json"])
-                enemy_summary = player_unit_summary(enemy_player_units, get_research_levels(db, tile["controller_village_id"]))
-                enemy_defense, enemy_attack = enemy_summary["defense"], enemy_summary["attack"]
-            else:
-                enemy_defense, enemy_attack = npc_units_defense(enemy_before_units), npc_units_attack(enemy_before_units)
-            attack, durability, _carry = sent_unit_stats(sent_units, research_levels)
-            if enemy_defense <= 0 or attack >= enemy_defense:
-                loss_ratio = 0 if enemy_attack <= 0 else min(enemy_attack / max(durability + attack, 1), 0.7)
-                survivors = distribute_losses(sent_units, 1 - loss_ratio)
+            enemy_before_units = npc_units_for_tile(tile) if not defender_is_player else {}
+            enemy_player_units = player_units_from_json(tile["garrison_json"]) if defender_is_player else {}
+            defender_research = get_research_levels(db, tile["controller_village_id"]) if defender_is_player else None
+            enemy_faction_slug = getattr(defender_research, "faction_slug", None)
+            combat = resolve_combat(
+                sent_units,
+                enemy_player_units if defender_is_player else enemy_before_units,
+                research_levels,
+                defender_research,
+                defender_is_player,
+            )
+            survivors = combat["attacker_survivors"]
+            defender_survivors = combat["defender_survivors"]
+            zero_loot = {"iron": 0, "wood": 0, "water": 0, "spice": 0}
+            if combat["victory"]:
+                if defender_is_player:
+                    for key, amount in defender_survivors.items():
+                        add_village_units(db, tile["controller_village_id"], key, amount)
                 db.execute("UPDATE map_tiles SET controller_village_id = ?, garrison_json = ?, npc_strength = 0, npc_units_json = '{}' WHERE id = ?", (village_id, player_units_json(survivors), tile["id"]))
                 db.execute("UPDATE troop_movements SET status = 'complete', survivors_json = ?, report = ? WHERE id = ?", (player_units_json(survivors), "Large Spice Bloom captured. Surviving forces now form its garrison.", movement["id"]))
-                if not defender_is_player:
-                    create_battle_report(db, village, movement, tile, "Captured", sent_units, survivors, enemy_before_units, {}, {"iron": 0, "wood": 0, "water": 0, "spice": 0}, "capture")
+                enemy_after_units = {}
+                enemy_player_after = defender_survivors if defender_is_player else {}
+                outcome = "Captured"
             else:
-                db.execute("UPDATE troop_movements SET status = 'complete', survivors_json = '{}', report = ? WHERE id = ?", ("Capture failed. The defending garrison held the bloom.", movement["id"]))
-                if not defender_is_player:
-                    create_battle_report(db, village, movement, tile, "Defeat", sent_units, {}, enemy_before_units, enemy_before_units, {"iron": 0, "wood": 0, "water": 0, "spice": 0}, "capture")
+                if defender_is_player:
+                    db.execute("UPDATE map_tiles SET garrison_json = ? WHERE id = ?", (player_units_json(defender_survivors), tile["id"]))
+                    enemy_player_after = defender_survivors
+                    enemy_after_units = {}
+                else:
+                    db.execute("UPDATE map_tiles SET npc_strength = ?, npc_units_json = ? WHERE id = ?", (npc_units_defense(defender_survivors), npc_units_json(defender_survivors), tile["id"]))
+                    enemy_after_units = defender_survivors
+                    enemy_player_after = {}
+                if survivors:
+                    return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], survivors, village_faction(db, village)))
+                    db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, report = ? WHERE id = ?", (player_units_json(survivors), return_at.isoformat(), "Capture failed. Survivors are retreating home.", movement["id"]))
+                else:
+                    db.execute("UPDATE troop_movements SET status = 'complete', survivors_json = '{}', report = ? WHERE id = ?", ("Capture failed. No attackers survived.", movement["id"]))
+                outcome = "Defeat"
+            create_battle_report(
+                db, village, movement, tile, outcome, sent_units, survivors,
+                enemy_before_units, enemy_after_units, zero_loot, "capture",
+                combat=combat, enemy_player_before=enemy_player_units,
+                enemy_player_after=enemy_player_after, enemy_faction_slug=enemy_faction_slug,
+            )
             continue
-        attack, durability, carry = sent_unit_stats(sent_units, research_levels)
+        _attack, _durability, carry = sent_unit_stats(sent_units, research_levels)
         enemy_before_units = npc_units_for_tile(tile)
-        enemy_defense = npc_units_defense(enemy_before_units)
-        enemy_attack = npc_units_attack(enemy_before_units)
-        if enemy_defense <= 0 or attack >= enemy_defense:
-            loss_ratio = 0 if enemy_attack <= 0 else min(enemy_attack / max(durability + attack, 1), 0.65)
-            survivors = distribute_losses(sent_units, 1 - loss_ratio)
+        combat = resolve_combat(sent_units, enemy_before_units, research_levels)
+        survivors = combat["attacker_survivors"]
+        enemy_after_units = combat["defender_survivors"]
+        if combat["victory"]:
             _sa, _sd, survivor_carry = sent_unit_stats(survivors, research_levels)
             loot = take_loot(tile, survivor_carry) if tile else {"iron": 0, "wood": 0, "water": 0, "spice": 0}
             enemy_after_units = {}
@@ -2105,12 +2317,12 @@ def process_troop_movements(db, village_id):
                 db.execute("UPDATE map_tiles SET npc_strength = 0, npc_units_json = '{}', resource_iron = resource_iron - ?, resource_wood = resource_wood - ?, resource_water = resource_water - ?, resource_spice = resource_spice - ? WHERE id = ?", (loot["iron"], loot["wood"], loot["water"], loot["spice"], tile["id"]))
             outcome, report = "Victory", "Raid won. Survivors are returning with loot."
         else:
-            survivors = {}
             loot = {"iron": 0, "wood": 0, "water": 0, "spice": 0}
-            enemy_after_units = enemy_before_units
-            outcome, report = "Defeat", "Raid failed. No units survived."
-        create_battle_report(db, village, movement, tile, outcome, sent_units, survivors, enemy_before_units, enemy_after_units, loot)
-        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], sent_units, village_faction(db, village)))
+            if tile:
+                db.execute("UPDATE map_tiles SET npc_strength = ?, npc_units_json = ? WHERE id = ?", (npc_units_defense(enemy_after_units), npc_units_json(enemy_after_units), tile["id"]))
+            outcome, report = "Defeat", "Raid failed. Survivors are retreating home." if survivors else "Raid failed. No units survived."
+        create_battle_report(db, village, movement, tile, outcome, sent_units, survivors, enemy_before_units, enemy_after_units, loot, combat=combat)
+        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], survivors or sent_units, village_faction(db, village)))
         db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, loot_iron = ?, loot_wood = ?, loot_water = ?, loot_spice = ?, report = ? WHERE id = ?", (player_units_json(survivors), return_at.isoformat(), loot["iron"], loot["wood"], loot["water"], loot["spice"], report, movement["id"]))
     harvesting = db.execute("SELECT * FROM troop_movements WHERE village_id = ? AND status = 'harvesting' ORDER BY return_at ASC", (village_id,)).fetchall()
     for movement in harvesting:
@@ -2273,7 +2485,7 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "key": key,
                 "name": unit_display_name(key, faction_slug),
                 "role": config.get("role"),
-                "ability_summary": FACTION_ABILITIES[faction_slug]["description"] if category == "military" else config.get("ability_summary"),
+                "ability_summary": " ".join(filter(None, [config.get("ability_summary"), FACTION_ABILITIES[faction_slug]["description"] if category == "military" else None])),
                 "abilities": config.get("abilities", []),
                 "owned": units.get(key, 0),
                 "unlocked": unlocked,
@@ -2284,6 +2496,7 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "damage": effective_unit_stat(key, "damage", research_levels),
                 "armor": effective_unit_stat(key, "armor", research_levels),
                 "shield": effective_unit_stat(key, "shield", research_levels),
+                "shield_piercing": round(faction_unit_stat(key, "shield_piercing", faction_slug) * 100),
                 "speed": faction_unit_stat(key, "speed", faction_slug),
                 "carry": config["carry"],
                 "water_upkeep": faction_unit_stat(key, "water_upkeep", faction_slug),
@@ -3284,6 +3497,8 @@ def map_page(tile_id=None):
                 "speed": faction_unit_stat(key, "speed", user["faction_slug"]),
                 "carry": UNIT_TYPES[key]["carry"],
                 "damage": effective_unit_stat(key, "damage", research_levels),
+                "shield": effective_unit_stat(key, "shield", research_levels),
+                "shield_piercing": round(faction_unit_stat(key, "shield_piercing", user["faction_slug"]) * 100),
                 "durability": effective_unit_stat(key, "health", research_levels)
                 + effective_unit_stat(key, "armor", research_levels) * 5
                 + effective_unit_stat(key, "shield", research_levels) * 3,
@@ -3425,6 +3640,7 @@ def plan_map_mission(tile_id):
             return jsonify(error="Each harvester needs a Carryall."), 400
         research = get_research_levels(db, village["id"])
         attack, durability, carry = sent_unit_stats(selected, research)
+        combat_profile = player_combat_profile(selected, research)
         travel = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], selected, user["faction_slug"])
         owned = tile["controller_village_id"] == village["id"]
         intel = tile if owned else get_tile_intel(db, user["id"], tile_id)
@@ -3454,6 +3670,8 @@ def plan_map_mission(tile_id):
             risk = "Lower — margin above known defense; losses remain possible"
         harvest_duration = HARVEST_POLICIES.get(request.args.get("harvest_policy", "balanced"), HARVEST_POLICIES["balanced"])["duration_seconds"] if mission == "harvest" else 0
         return jsonify(attack=round(attack, 1), durability=round(durability, 1), carry=carry,
+                       shield=round(combat_profile["shield"], 1),
+                       shield_piercing=round(combat_profile["piercing_attack"] / max(combat_profile["attack"], 1) * 100),
                        travel_seconds=travel, arrival_at=(now + timedelta(seconds=travel)).isoformat(),
                        return_at=None if mission in ("capture", "reinforce") else (now + timedelta(seconds=travel * 2 + harvest_duration)).isoformat(),
                        known_defense=defense, intel_age_seconds=age, stale=stale, risk=risk,
@@ -3865,15 +4083,32 @@ def battle_report(report_id):
         sent_units = json.loads(report["units_sent_json"])
         survived_units = json.loads(report["units_survived_json"])
         lost_units = json.loads(report["units_lost_json"])
+        attacker_research = get_research_levels(db, report["village_id"])
+        enemy_player_before = player_units_from_json(report["enemy_player_before_json"])
+        enemy_player_after = player_units_from_json(report["enemy_player_after_json"])
+        enemy_player_lost = player_units_from_json(report["enemy_player_lost_json"])
+        enemy_is_player = bool(enemy_player_before)
+        enemy_research = ResearchLevels({}, report["enemy_faction_slug"]) if enemy_is_player else None
+        combat = json.loads(report["combat_json"] or "{}")
+        if enemy_is_player:
+            enemy_before_rows = player_unit_report_rows(enemy_player_before, report["enemy_faction_slug"], enemy_research)
+            enemy_after_rows = player_unit_report_rows(enemy_player_after, report["enemy_faction_slug"], enemy_research)
+            enemy_lost_rows = player_unit_report_rows(enemy_player_lost, report["enemy_faction_slug"], enemy_research)
+        else:
+            enemy_before_rows = npc_unit_report_rows(npc_units_from_json(report["enemy_before_json"]) or generate_npc_units(report["enemy_before"], random.Random(report["id"] * 17)))
+            enemy_after_rows = npc_unit_report_rows(npc_units_from_json(report["enemy_after_json"]) or generate_npc_units(report["enemy_after"], random.Random(report["id"] * 19)))
+            enemy_lost_rows = npc_unit_report_rows(npc_units_from_json(report["enemy_lost_json"]) or generate_npc_units(report["enemy_lost"], random.Random(report["id"] * 23)))
     return render_template(
         "battle_report.html",
         report=report,
-        sent_units=unit_report_rows(sent_units, report["faction_slug"]),
-        survived_units=unit_report_rows(survived_units, report["faction_slug"]),
-        lost_units=unit_report_rows(lost_units, report["faction_slug"]),
-        enemy_before_units=npc_unit_report_rows(npc_units_from_json(report["enemy_before_json"]) or generate_npc_units(report["enemy_before"], random.Random(report["id"] * 17))),
-        enemy_after_units=npc_unit_report_rows(npc_units_from_json(report["enemy_after_json"]) or generate_npc_units(report["enemy_after"], random.Random(report["id"] * 19))),
-        enemy_lost_units=npc_unit_report_rows(npc_units_from_json(report["enemy_lost_json"]) or generate_npc_units(report["enemy_lost"], random.Random(report["id"] * 23))),
+        sent_units=player_unit_report_rows(sent_units, report["faction_slug"], attacker_research),
+        survived_units=player_unit_report_rows(survived_units, report["faction_slug"], attacker_research),
+        lost_units=player_unit_report_rows(lost_units, report["faction_slug"], attacker_research),
+        enemy_before_units=enemy_before_rows,
+        enemy_after_units=enemy_after_rows,
+        enemy_lost_units=enemy_lost_rows,
+        enemy_is_player=enemy_is_player,
+        combat=combat,
     )
 
 

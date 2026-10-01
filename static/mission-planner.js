@@ -19,7 +19,8 @@ document.querySelectorAll("form[data-plan-mission]").forEach((form) => {
             preview.replaceChildren();
             if (!response.ok) { preview.textContent = data.error || "Estimate unavailable. Refresh and try again."; return; }
             const time = value => new Date(value).toLocaleTimeString();
-            const items = [`Selected attack ${data.attack}`, `Durability ${data.durability}`, `Carry ${data.carry}`,
+            const items = [`Selected attack ${data.attack}`, `Durability ${data.durability}`, `Shield ${data.shield}`,
+                `Shield pierce ${data.shield_piercing}%`, `Carry ${data.carry}`,
                 `One way ${data.travel_seconds}s`, `Arrival ${time(data.arrival_at)}`,
                 data.return_at ? `Expected home ${time(data.return_at)}` : "Stationed after arrival",
                 data.known_defense === null ? "Enemy defense unknown" : `Known defense ${data.known_defense}`,
