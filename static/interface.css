@@ -511,3 +511,20 @@ tbody tr:hover { background: #ffffff03; }
 
 .topbar .nav-logout { display: inline-flex; margin: 0; }
 .topbar .nav-logout button { border: 0; background: transparent; color: inherit; padding: 0; font: inherit; box-shadow: none; cursor: pointer; }
+
+/* Twelve-plot base courtyard aligned to the foundations painted into background v4. */
+.overview-panel .base-plot-map .plot-foundation { display: none; }
+.overview-panel .scene-art-map.base-plot-map .base-plot { width: 15%; height: 22%; }
+.overview-panel .scene-art-map.base-plot-map .slot-center { left: 50%; top: 43%; width: 23%; height: 32%; --ground-anchor: -65%; z-index: 6; }
+.overview-panel .scene-art-map.base-plot-map .slot-north { left: 50%; top: 25%; z-index: 3; }
+.overview-panel .scene-art-map.base-plot-map .slot-north_east { left: 70%; top: 27%; z-index: 3; }
+.overview-panel .scene-art-map.base-plot-map .slot-east { left: 79%; top: 44%; z-index: 4; }
+.overview-panel .scene-art-map.base-plot-map .slot-south_east { left: 70%; top: 64%; z-index: 7; }
+.overview-panel .scene-art-map.base-plot-map .slot-south { left: 50%; top: 73%; z-index: 8; }
+.overview-panel .scene-art-map.base-plot-map .slot-south_west { left: 29%; top: 64%; z-index: 7; }
+.overview-panel .scene-art-map.base-plot-map .slot-west { left: 21%; top: 44%; z-index: 4; }
+.overview-panel .scene-art-map.base-plot-map .slot-north_west { left: 29%; top: 27%; z-index: 3; }
+.overview-panel .scene-art-map.base-plot-map .slot-gatehouse { left: 50%; top: 14.5%; width: 9%; height: 13%; --plot-art-width: 125%; --ground-anchor: -70%; z-index: 2; }
+.overview-panel .scene-art-map.base-plot-map .slot-expansion_west { left: 17%; top: 59%; width: 9%; height: 13%; z-index: 5; }
+.overview-panel .scene-art-map.base-plot-map .slot-expansion_east { left: 83%; top: 59%; width: 9%; height: 13%; z-index: 5; }
+.overview-panel .base-plot-map .empty-plot .building-label { font-size: 8px; }

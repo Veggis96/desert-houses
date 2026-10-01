@@ -13,6 +13,8 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Short test construction timers are enabled for local iteration
 - Gain development points from building spending: every combined 1000 Wood + Water spent gives 1 point
 - Build Dew Field, Windtrap, Large Windtrap, Spice Refinery, Flight Works, Embassy, Barracks, Command Center, Research Center, and Deathstill infrastructure
+- Expand the main settlement across a seamless 12-plot courtyard with ten active infrastructure sites and two reserved expansion foundations
+- Build a Vehicle Workshop for faction-named desert bikes and Armored Troop Carriers
 - Refine Spice Sand into Melange automatically at a 4:1 ratio; refining stops when sand runs out or Melange storage is full
 - Produce only Spice Sand from Spice Fields; sustained Melange refining requires additional Sand from raids against map blooms
 - Upgrade the Spice Refinery for greater hourly throughput and research Melange Processing for +8% throughput and 0.1 less Spice Sand per Melange per level
@@ -29,6 +31,7 @@ A small Flask/SQLite starting build for a Dune-inspired Travian-like browser str
 - Build faction influence buildings: Sisterhood Chapel, Whisper Chamber, or Sayyadina Sanctuary
 - Train faction influence agents after unlocking Bene Gesserit Influence
 - Build Scout and Assault Ornithopters, Carryalls, and Spice Harvesters in the Flight Works
+- Use Armored Troop Carriers to protect up to 16 infantry during the first combat round
 - Render human troops in the Deathstill to recover Water; higher building levels improve recovery efficiency
 - Raid Small and Medium Spice Blooms with regular forces
 - Recall selected troops or the full garrison from owned blooms with timed travel home and an undefended-bloom confirmation

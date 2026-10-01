@@ -114,6 +114,15 @@ BUILDINGS = {
         "melange_from_level": 2,
         "melange_base_cost": 5,
     },
+    "vehicle_workshop": {
+        "name": "Vehicle Workshop",
+        "resource": None,
+        "base_production": 0,
+        "cost": {"iron": 720, "wood": 560, "water": 260, "spice": 95, "melange": 5},
+        "requires": {"command_center": 4, "research_center": 2},
+        "melange_from_level": 3,
+        "melange_base_cost": 4,
+    },
     "warehouse": {
         "name": "Warehouse",
         "resource": None,
@@ -192,14 +201,17 @@ RESOURCE_BUILDING_KEYS = ("iron_mine", "wood_yard", "dew_field", "spice_field", 
 INFRASTRUCTURE_BUILDING_KEYS = tuple(key for key in BUILDINGS if key not in RESOURCE_BUILDING_KEYS)
 BASE_VISUAL_SLOTS = (
     {"key": "center", "building_key": "command_center", "foundation": "images/base/foundation_center_neutral.png"},
-    {"key": "north", "building_key": "spice_refinery", "foundation": "images/base/foundation_outer_neutral.png"},
-    {"key": "north_east", "building_key": "embassy", "foundation": "images/base/foundation_outer_neutral.png"},
+    {"key": "north", "building_key": "vehicle_workshop", "foundation": "images/base/foundation_outer_neutral.png"},
+    {"key": "north_east", "building_key": "spice_refinery", "foundation": "images/base/foundation_outer_neutral.png"},
     {"key": "east", "building_key": "research_center", "foundation": "images/base/foundation_outer_neutral.png"},
     {"key": "south_east", "building_key": "influence_sanctuary", "foundation": "images/base/foundation_outer_neutral.png"},
     {"key": "south", "building_key": "warehouse", "foundation": "images/base/foundation_outer_neutral.png"},
     {"key": "south_west", "building_key": "barracks", "foundation": "images/base/foundation_outer_neutral.png"},
     {"key": "west", "building_key": "deathstill", "foundation": "images/base/foundation_outer_neutral.png"},
     {"key": "north_west", "building_key": "flight_works", "foundation": "images/base/foundation_outer_neutral.png"},
+    {"key": "gatehouse", "building_key": "embassy", "foundation": "images/base/foundation_outer_neutral.png"},
+    {"key": "expansion_west", "building_key": None, "foundation": "images/base/foundation_outer_neutral.png"},
+    {"key": "expansion_east", "building_key": None, "foundation": "images/base/foundation_outer_neutral.png"},
 )
 
 POINT_VALUE = 1000
@@ -534,6 +546,37 @@ UNIT_TYPES = {
         "shield_piercing": 0.12,
         "water_upkeep": 1.0, "training_time": 70,
         "cost": {"iron": 520, "wood": 280, "water": 120, "spice": 70, "melange": 10},
+    },
+    "desert_raider_bike": {
+        "category": "ground_vehicle", "tier": 3, "role": "Fast Ground Flanker",
+        "combat_tags": ["vehicle", "ground_vehicle", "light", "fast"],
+        "counter_bonuses": {"support": 0.40, "heavy_weapon": 0.30},
+        "counter_summary": "Flanks RPG teams, support crews, and static heavy weapons.",
+        "weak_against": "Vulnerable to rifles, concentrated fire, and dedicated anti-vehicle weapons.",
+        "ability_summary": "A fast desert strike vehicle for raids, pursuit, and attacks on exposed support units.",
+        "abilities": ["Deals +40% damage against support units.", "Deals +30% damage against heavy weapon teams."],
+        "names": {"atreides": "Atreides Desert Speeder", "harkonnen": "Harkonnen Raider Bike", "fremen": "Fremen Sand Bike"},
+        "unlock_building": "vehicle_workshop", "unlock_level": 1, "can_raid": True,
+        "health": 76, "damage": 24, "armor": 3, "shield": 0, "speed": 22, "carry": 32,
+        "shield_piercing": 0.08,
+        "water_upkeep": 0.65, "training_time": 38,
+        "cost": {"iron": 170, "wood": 95, "water": 34, "spice": 18, "melange": 1},
+    },
+    "armored_troop_carrier": {
+        "category": "ground_vehicle", "tier": 4, "role": "Armored Infantry Transport",
+        "combat_tags": ["vehicle", "ground_vehicle", "transport", "heavy"],
+        "counter_bonuses": {"ranged": 0.25, "light": 0.20},
+        "counter_summary": "Pushes through rifle fire and protects an infantry formation on approach.",
+        "weak_against": "RPG teams and Assault Ornithopters can break its heavy armor.",
+        "ability_summary": "A durable ground transport that escorts infantry into dangerous engagements.",
+        "abilities": ["Transports up to 16 infantry.", "Its armor makes it effective against conventional ranged and light units."],
+        "names": {"atreides": "Atreides Armored Carrier", "harkonnen": "Harkonnen Assault Carrier", "fremen": "Fremen Sietch Carrier"},
+        "unlock_building": "vehicle_workshop", "unlock_level": 3, "can_raid": True,
+        "is_ground_transport": True, "transport_capacity": 16,
+        "health": 240, "damage": 14, "armor": 12, "shield": 8, "speed": 8, "carry": 70,
+        "shield_piercing": 0.05,
+        "water_upkeep": 1.8, "training_time": 82,
+        "cost": {"iron": 620, "wood": 340, "water": 145, "spice": 80, "melange": 11},
     },
     "carryall": {
         "category": "vehicle", "tier": 5, "role": "Long-range Transport",
@@ -2108,6 +2151,26 @@ def player_combat_profile(units, research_levels=None):
     return {"attack": attack, "body": body, "shield": shield, "piercing_attack": piercing_attack, "count": sum(units.values())}
 
 
+def armored_deployment_guard(units, research_levels=None):
+    """Temporary first-round protection supplied by Armored Troop Carriers."""
+    units = normalize_player_units(units)
+    carriers = units.get("armored_troop_carrier", 0)
+    capacity = carriers * UNIT_TYPES["armored_troop_carrier"].get("transport_capacity", 0)
+    infantry_count = sum(
+        amount for key, amount in units.items()
+        if UNIT_TYPES[key]["category"] in ("military", "influence")
+    )
+    if capacity <= 0 or infantry_count <= 0:
+        return 0.0
+    infantry_body = sum(
+        combat_unit_body(key, True, research_levels) * amount
+        for key, amount in units.items()
+        if UNIT_TYPES[key]["category"] in ("military", "influence")
+    )
+    protected_share = min(capacity / infantry_count, 1)
+    return round(infantry_body * protected_share * 0.30, 1)
+
+
 def npc_combat_profile(units):
     units = normalize_npc_units(units)
     count = sum(units.values())
@@ -2205,22 +2268,29 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
     defender_body = defender["body"]
     attacker_shield = attacker["shield"]
     defender_shield = defender["shield"]
+    attacker_deployment_guard = armored_deployment_guard(attacker_units, attacker_research)
+    defender_deployment_guard = armored_deployment_guard(defender_units, defender_research) if defender_is_player else 0.0
     attacker_absorbed = defender_absorbed = 0.0
+    attacker_deployment_absorbed = defender_deployment_absorbed = 0.0
     rounds = []
 
-    def apply_damage(body, shield, incoming, piercing):
+    def apply_damage(body, shield, deployment_guard, incoming, piercing):
         bypass = min(max(piercing, 0), incoming)
-        shield_hit = max(incoming - bypass, 0)
-        absorbed = min(shield, shield_hit)
-        shield -= absorbed
-        body -= bypass + max(shield_hit - absorbed, 0)
-        return max(body, 0), max(shield, 0), absorbed
+        conventional = max(incoming - bypass, 0)
+        deployment_absorbed = min(deployment_guard, conventional)
+        deployment_guard -= deployment_absorbed
+        conventional -= deployment_absorbed
+        shield_absorbed = min(shield, conventional)
+        shield -= shield_absorbed
+        body -= bypass + max(conventional - shield_absorbed, 0)
+        return max(body, 0), max(shield, 0), max(deployment_guard, 0), shield_absorbed, deployment_absorbed
 
     if defender["body"] <= 0:
         return {
             "victory": True, "round_count": 0, "rounds": [],
             "attacker_survivors": attacker_units, "defender_survivors": {},
             "attacker_shield_absorbed": 0, "defender_shield_absorbed": 0,
+            "attacker_deployment_absorbed": 0, "defender_deployment_absorbed": 0,
             "attacker_piercing_percent": 0, "defender_piercing_percent": 0,
             "attacker_counter_bonus_percent": round(attacker_counter_bonus * 100),
             "defender_counter_bonus_percent": round(defender_counter_bonus * 100),
@@ -2233,23 +2303,29 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
         defender_damage = defender["attack"] * (1 + defender_counter_bonus) * defender_strength
         attacker_piercing = attacker["piercing_attack"] * (1 + attacker_counter_bonus) * attacker_strength
         defender_piercing = defender["piercing_attack"] * (1 + defender_counter_bonus) * defender_strength
-        next_defender_body, next_defender_shield, absorbed_by_defender = apply_damage(
-            defender_body, defender_shield, attacker_damage, attacker_piercing
+        next_defender_body, next_defender_shield, next_defender_guard, absorbed_by_defender, deployment_by_defender = apply_damage(
+            defender_body, defender_shield, defender_deployment_guard, attacker_damage, attacker_piercing
         )
-        next_attacker_body, next_attacker_shield, absorbed_by_attacker = apply_damage(
-            attacker_body, attacker_shield, defender_damage, defender_piercing
+        next_attacker_body, next_attacker_shield, next_attacker_guard, absorbed_by_attacker, deployment_by_attacker = apply_damage(
+            attacker_body, attacker_shield, attacker_deployment_guard, defender_damage, defender_piercing
         )
         attacker_absorbed += absorbed_by_attacker
         defender_absorbed += absorbed_by_defender
+        attacker_deployment_absorbed += deployment_by_attacker
+        defender_deployment_absorbed += deployment_by_defender
         rounds.append({
             "round": round_number,
             "attacker_damage": round(attacker_damage, 1),
             "defender_damage": round(defender_damage, 1),
             "attacker_shield_absorbed": round(absorbed_by_attacker, 1),
             "defender_shield_absorbed": round(absorbed_by_defender, 1),
+            "attacker_deployment_absorbed": round(deployment_by_attacker, 1),
+            "defender_deployment_absorbed": round(deployment_by_defender, 1),
         })
         attacker_body, attacker_shield = next_attacker_body, next_attacker_shield
         defender_body, defender_shield = next_defender_body, next_defender_shield
+        attacker_deployment_guard = 0
+        defender_deployment_guard = 0
         if attacker_body <= 0 or defender_body <= 0:
             break
 
@@ -2268,6 +2344,8 @@ def resolve_combat(attacker_units, defender_units, attacker_research=None, defen
         "defender_survivors": defender_survivors,
         "attacker_shield_absorbed": round(attacker_absorbed, 1),
         "defender_shield_absorbed": round(defender_absorbed, 1),
+        "attacker_deployment_absorbed": round(attacker_deployment_absorbed, 1),
+        "defender_deployment_absorbed": round(defender_deployment_absorbed, 1),
         "attacker_piercing_percent": round(attacker["piercing_attack"] / max(attacker["attack"], 1) * 100),
         "defender_piercing_percent": round(defender["piercing_attack"] / max(defender["attack"], 1) * 100),
         "attacker_counter_bonus_percent": round(attacker_counter_bonus * 100),
@@ -2740,6 +2818,8 @@ def open_building_endpoint(building_key):
         return "influence_sanctuary_page"
     if building_key == "flight_works":
         return "flight_works_page"
+    if building_key == "vehicle_workshop":
+        return "vehicle_workshop_page"
     if building_key == "deathstill":
         return "deathstill_page"
     return None
@@ -2753,7 +2833,7 @@ def deathstill_recovery_rate(level):
 
 
 def deathstill_water_yield(unit_key, level):
-    if unit_key not in UNIT_TYPES or UNIT_TYPES[unit_key]["category"] == "vehicle":
+    if unit_key not in UNIT_TYPES or UNIT_TYPES[unit_key]["category"] not in ("military", "influence"):
         return 0
     water_cost = UNIT_TYPES[unit_key]["cost"].get("water", 0)
     return max(int(math.floor(water_cost * deathstill_recovery_rate(level))), 1)
@@ -2830,6 +2910,10 @@ def base_building_art_image(building_key, level):
         if level >= minimum_level and os.path.exists(os.path.join(BASE_DIR, "static", art_path)):
             return art_path
 
+    integrated_path = f"images/base/integrated/{building_key}.png"
+    if os.path.exists(os.path.join(BASE_DIR, "static", integrated_path)):
+        return integrated_path
+
     base_path = f"images/base/building_{building_key}.png"
     if os.path.exists(os.path.join(BASE_DIR, "static", base_path)):
         return base_path
@@ -2877,6 +2961,8 @@ def resource_field_scene_image(buildings):
 
 def village_scene_image():
     for base_background in (
+        "images/base/base_courtyard_background_v4.png",
+        "images/base/base_courtyard_background_v3.png",
         "images/base/base_courtyard_background_v2.png",
         "images/base/base_courtyard_background.png",
     ):
@@ -2926,6 +3012,14 @@ def base_nav_items(buildings, faction_slug):
             "level": buildings.get("flight_works", 0),
             "locked": buildings.get("flight_works", 0) <= 0,
             "hint": "Aircraft and harvesters",
+        },
+        {
+            "key": "vehicle_workshop",
+            "label": "Vehicle Workshop",
+            "endpoint": "vehicle_workshop_page",
+            "level": buildings.get("vehicle_workshop", 0),
+            "locked": buildings.get("vehicle_workshop", 0) <= 0,
+            "hint": "Ground vehicles",
         },
         {
             "key": "deathstill",
@@ -4476,6 +4570,32 @@ def flight_works_page():
     )
 
 
+@app.route("/buildings/vehicle_workshop")
+@login_required
+def vehicle_workshop_page():
+    db, user, village, buildings, research_levels, units = prepare_village_context()
+    with db:
+        full_unit_queue = get_unit_training_queue(db, village["id"])
+        unit_queue = filter_unit_queue_by_category(full_unit_queue, "ground_vehicle")
+        unit_cards = build_unit_cards(village, buildings, research_levels, units, full_unit_queue, user["faction_slug"], "ground_vehicle")
+    db.close()
+    return render_template(
+        "unit_building.html",
+        title="Vehicle Workshop",
+        eyebrow="Desert Motor Pool",
+        description="Build fast raider bikes and armored ground transports for combined-arms operations.",
+        user=user,
+        village=village,
+        unit_cards=unit_cards,
+        unit_queue=unit_queue,
+        unit_queue_limit=UNIT_QUEUE_LIMIT,
+        unit_display_name=unit_display_name,
+        queue_status=queue_status,
+        base_nav=base_nav_items(buildings, user["faction_slug"]),
+        active_base_tab="vehicle_workshop",
+    )
+
+
 @app.route("/buildings/influence_sanctuary")
 @login_required
 def influence_sanctuary_page():
@@ -4517,7 +4637,7 @@ def deathstill_page():
     capacity = storage_capacity(buildings)
     reclaimable_units = []
     for key, config in UNIT_TYPES.items():
-        if config["category"] == "vehicle":
+        if config["category"] not in ("military", "influence"):
             continue
         yield_per_unit = deathstill_water_yield(key, level)
         owned = units.get(key, 0)
@@ -4548,7 +4668,7 @@ def deathstill_page():
 @app.route("/buildings/deathstill/render/<unit_key>", methods=("POST",))
 @login_required
 def render_units_in_deathstill(unit_key):
-    if unit_key not in UNIT_TYPES or UNIT_TYPES[unit_key]["category"] == "vehicle":
+    if unit_key not in UNIT_TYPES or UNIT_TYPES[unit_key]["category"] not in ("military", "influence"):
         flash("That unit cannot be processed in the Deathstill.")
         return redirect(url_for("deathstill_page"))
     try:
