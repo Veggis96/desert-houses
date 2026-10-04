@@ -108,9 +108,11 @@
             {% if building %}
             <button class="building-spot base-plot slot-{{ slot.key }} {{ building.key }} {% if building.level == 0 %}foundation{% endif %} {% if loop.first %}active{% endif %}" type="button" data-building-key="{{ building.key }}" aria-label="{{ building.name }}, {{ 'level ' ~ building.level if building.level else 'not built' }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
                 <span class="plot-foundation" aria-hidden="true"><img src="{{ url_for('static', filename=slot.foundation) }}" alt=""></span>
+                {% if building.level > 0 %}
                 <span class="building-art base-building-art asset-art" aria-hidden="true">
                     <img src="{{ url_for('static', filename=('images/base/integrated/' ~ building.key ~ '.png') if slot.art_image == ('images/base/building_' ~ building.key ~ '.png') else slot.art_image) }}" alt="">
                 </span>
+                {% endif %}
                 <span class="building-label">{{ building.name }}{% if building.level == 0 %}<small class="unbuilt-label">Not built</small>{% endif %}</span>
                 <span class="level-badge">{% if building.level == 0 %}Site{% else %}Lv {{ building.level }}{% endif %}</span>
                 {% with construction_key=building.key %}{% include "construction_marker.html" %}{% endwith %}
@@ -127,11 +129,13 @@
         <div class="village-detail-stack">
         {% for building in buildings %}
             <article class="building-detail {% if building.key == 'command_center' %}active{% endif %}" data-building-detail="{{ building.key }}">
+                {% if building.level > 0 %}
                 <div class="detail-art">
                     {% for slot in base_visual_slots if slot.building and slot.building.key == building.key %}
                         <img src="{{ url_for('static', filename=('images/base/integrated/' ~ building.key ~ '.png') if slot.art_image == ('images/base/building_' ~ building.key ~ '.png') else slot.art_image) }}" alt="">
                     {% endfor %}
                 </div>
+                {% endif %}
                 <div class="base-detail-copy">
                     <h3>{{ building.name }}</h3>
                     <p>Level {{ building.level }}</p>
