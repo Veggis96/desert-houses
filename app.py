@@ -872,7 +872,12 @@ def dashboard_priorities(village, rates, capacity, buildings, construction_queue
             endpoint = "inbox" if step.get("report_read") else "map_page"
         else:
             endpoint = "dashboard"
-        add("primary", f"Guidance {tutorial['index']}/{tutorial['total']}", step["title"], step["text"], endpoint, "Continue objective")
+        if tutorial["ready"]:
+            add("primary", f"Guidance {tutorial['index']}/{tutorial['total']}", step["title"] + " — complete",
+                "Objective complete. Claim your reward to advance to the next objective.", "dashboard", "Claim reward")
+            priorities[-1]["href"] += "#tutorial-objective"
+        else:
+            add("primary", f"Guidance {tutorial['index']}/{tutorial['total']}", step["title"], step["text"], endpoint, "Continue objective")
 
     if not construction_queue:
         candidates = [card for card in building_cards if card["can_upgrade"]]

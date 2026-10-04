@@ -208,7 +208,7 @@
     </div>
 </section>
 
-<section class="panel spaced-panel compact-panel tutorial-panel">
+<section id="tutorial-objective" class="panel spaced-panel compact-panel tutorial-panel">
     {% if tutorial.complete %}
         <div>
             <p class="eyebrow">Tutorial Complete</p>
@@ -228,7 +228,11 @@
                 </form>
             {% endif %}
         </div>
-        <p class="compact-copy">{{ tutorial.step.text }}</p>
+        {% if tutorial.ready %}
+            <p class="compact-copy"><strong>Objective complete!</strong> Claim your reward to unlock the next objective.</p>
+        {% else %}
+            <p class="compact-copy">{{ tutorial.step.text }}</p>
+        {% endif %}
         <div class="cost-list">
             <span>Reward Iron {{ tutorial.step.reward.iron }}</span>
             <span>Wood {{ tutorial.step.reward.wood }}</span>
