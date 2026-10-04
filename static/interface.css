@@ -528,3 +528,24 @@ tbody tr:hover { background: #ffffff03; }
 .overview-panel .scene-art-map.base-plot-map .slot-expansion_west { left: 17%; top: 59%; width: 9%; height: 13%; z-index: 5; }
 .overview-panel .scene-art-map.base-plot-map .slot-expansion_east { left: 83%; top: 59%; width: 9%; height: 13%; z-index: 5; }
 .overview-panel .base-plot-map .empty-plot .building-label { font-size: 8px; }
+
+/* Empty construction sites remain visible when no building art exists yet. */
+.overview-panel .base-plot-map .base-plot.foundation {
+    background: rgba(23, 29, 23, .45);
+    border: 1px dashed rgba(215, 181, 120, .65);
+    border-radius: 12px;
+}
+.overview-panel .base-plot-map .base-plot.foundation .building-label {
+    display: block;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    white-space: normal;
+    width: max-content;
+    max-width: 130%;
+}
+.overview-panel .building-detail.unbuilt-detail.active {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, .8fr);
+}
+@media (max-width: 700px) {
+    .overview-panel .building-detail.unbuilt-detail.active { grid-template-columns: 1fr; }
+}

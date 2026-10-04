@@ -16,7 +16,7 @@ This pass targets an active local MVP session: a useful starter army within 20 m
 | Research Center base cost (Iron / Wood / Water / Sand) | 320 / 280 / 120 / 20 | 200 / 180 / 80 / 10 |
 | Pistol troop Melange cost | 1 each | 0 |
 
-Tutorial building objectives match the lower unlocks. Tutorial reward claims now enforce raid/report-reading objectives using the same checks as the displayed tutorial. Step order and existing progress indices remain intact. Starting stockpiles and tutorial rewards were retained.
+Tutorial building objectives match the lower unlocks. Tutorial reward claims now enforce raid/report-reading objectives using the same checks as the displayed tutorial. Step order and existing progress indices remain intact. Tutorial rewards were retained. New villages now start with Command Center level 1, no Warehouse, 1,000 each Iron/Wood/Water and 50 Spice Sand. The four starter resource fields remain level 1. Existing saves are not reset. Storage without a Warehouse is 1,000.
 
 Production values apply to existing villages as well as new ones. Building-cost reductions also affect later upgrades of those buildings through the existing cost multiplier. Existing buildings, queued costs, paid resources, and troop holdings are not rewritten or refunded.
 
@@ -26,10 +26,10 @@ The deterministic projection follows the tutorial, claims rewards immediately, b
 
 | Milestone | Atreides | Harkonnen | Fremen |
 | --- | --- | --- | --- |
-| Windtrap built | 6.8 min | 6.8 min | 6.8 min |
+| Windtrap built | 7.3 min | 7.3 min | 7.3 min |
 | First 5 melee troops | 11.3 min | 11.3 min | 11.3 min |
 | First 3 pistol troops | 13.7 min | 13.7 min | 13.7 min |
-| Capture army funded and trained | 155.8 min | 148.6 min | 155.8 min |
+| Capture army funded and trained | 63.3 min | 60.5 min | 63.3 min |
 | Net Water/hour with that army at home | 93.4 | 92.7 | 106.3 |
 
 Under the same conservative strategy, the previous values needed roughly 6–8 days to fund that capture army. Investing earlier in mines or raiding would change those timings.

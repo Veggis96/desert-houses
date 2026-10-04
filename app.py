@@ -1262,11 +1262,11 @@ def create_starting_village(db, user_id):
         INSERT INTO villages (user_id, name, iron, wood, water, spice, melange, last_resource_update)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (user_id, "First Sietch", 900, 900, 350, 35, 0, now),
+        (user_id, "First Sietch", 1000, 1000, 1000, 50, 0, now),
     )
     village_id = cursor.lastrowid
     for building_key in BUILDINGS:
-        start_level = 1 if building_key in ("iron_mine", "wood_yard", "dew_field", "spice_field", "warehouse") else 0
+        start_level = 1 if building_key in ("iron_mine", "wood_yard", "dew_field", "spice_field", "command_center") else 0
         db.execute(
             "INSERT INTO village_buildings (village_id, building_key, level) VALUES (?, ?, ?)",
             (village_id, building_key, start_level),
@@ -3083,7 +3083,7 @@ def water_consumption_per_hour(buildings, units=None, faction_slug=None):
 
 
 def storage_capacity(buildings):
-    return 1000 + buildings.get("warehouse", 1) * 500
+    return 1000 + buildings.get("warehouse", 0) * 500
 
 
 def update_resources(db, village, faction_slug):

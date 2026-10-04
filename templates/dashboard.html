@@ -128,7 +128,7 @@
 
         <div class="village-detail-stack">
         {% for building in buildings %}
-            <article class="building-detail {% if building.key == 'command_center' %}active{% endif %}" data-building-detail="{{ building.key }}">
+            <article class="building-detail {% if building.level == 0 %}unbuilt-detail{% endif %} {% if building.key == 'command_center' %}active{% endif %}" data-building-detail="{{ building.key }}">
                 {% if building.level > 0 %}
                 <div class="detail-art">
                     {% for slot in base_visual_slots if slot.building and slot.building.key == building.key %}

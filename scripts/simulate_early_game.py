@@ -13,8 +13,8 @@ import app as game
 class Projection:
     def __init__(self, faction):
         self.faction = faction
-        self.buildings = {key: int(key in ("iron_mine", "wood_yard", "dew_field", "spice_field", "warehouse")) for key in game.BUILDINGS}
-        self.stock = dict(iron=900., wood=900., water=350., spice=35., melange=0.)
+        self.buildings = {key: int(key in ("iron_mine", "wood_yard", "dew_field", "spice_field", "command_center")) for key in game.BUILDINGS}
+        self.stock = dict(iron=1000., wood=1000., water=1000., spice=50., melange=0.)
         self.units = {}
         self.seconds = 0
         self.wait_seconds = 0
