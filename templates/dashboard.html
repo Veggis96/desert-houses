@@ -101,6 +101,7 @@
             {% endfor %}
         </select>
     </label>
+    <p class="muted">Select a plot to build or upgrade. Empty sites show their building name.</p>
     <div class="village-view">
         <div class="village-map scene-art-map village-scene-map base-plot-map" style="--scene-image: url('{{ url_for('static', filename='images/base/base_courtyard_background_v4.png') }}');" aria-label="Village buildings">
         {% for slot in base_visual_slots %}
