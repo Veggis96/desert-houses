@@ -579,7 +579,7 @@ tbody tr:hover { background: #ffffff03; }
 
 /* Keep the central tower inside its plot, clear of the two northern sites. */
 .overview-panel .scene-art-map.base-plot-map .slot-center {
-    --plot-art-width: 58%;
+    --plot-art-width: 88%;
     --ground-anchor: -50%;
 }
 .overview-panel .base-plot-map .slot-center .base-building-art {
@@ -588,4 +588,32 @@ tbody tr:hover { background: #ffffff03; }
 }
 .overview-panel .base-plot-map .base-building-art {
     pointer-events: none;
+}
+
+/* Scale the courtyard and all its sites together for a wider overview. */
+.base-overview-frame {
+    --base-zoom: .75;
+    aspect-ratio: 1672 / 941;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 10px;
+    background: radial-gradient(ellipse at center, #a77845, #665039 65%, #282920);
+    border: 1px solid var(--line);
+}
+.overview-panel .base-overview-frame .scene-art-map.base-plot-map {
+    max-width: none;
+    transform: scale(var(--base-zoom));
+    transform-origin: center;
+    border-radius: 18px;
+    transition: transform .15s ease;
+}
+.base-zoom-control {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--muted); font-size: 12px; margin-bottom: 14px;
+}
+.base-zoom-control input { width: min(220px, 45%); accent-color: var(--accent); }
+.base-zoom-control output { min-width: 36px; }
+@media (prefers-reduced-motion: reduce) {
+    .overview-panel .base-overview-frame .scene-art-map.base-plot-map { transition: none; }
 }
