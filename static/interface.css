@@ -617,3 +617,8 @@ tbody tr:hover { background: #ffffff03; }
 @media (prefers-reduced-motion: reduce) {
     .overview-panel .base-overview-frame .scene-art-map.base-plot-map { transition: none; }
 }
+
+.priority-card .guidance-actions { margin-top: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.guidance-actions form { margin: 0; }
+.guidance-actions a { color: var(--accent); font-size: 12px; font-weight: 700; }
+.guidance-actions button { padding: 8px 14px; font-size: 12px; }

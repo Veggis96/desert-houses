@@ -69,7 +69,19 @@
                 <p class="eyebrow">{{ priority.eyebrow }}</p>
                 <h3>{{ priority.title }}</h3>
                 <p>{{ priority.text }}</p>
+                {% if priority.tutorial_claim %}
+                    <div class="guidance-actions">
+                        {% if not priority.claim_ready %}
+                            <a href="{{ priority.href }}">Continue objective <span aria-hidden="true">→</span></a>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('claim_tutorial_reward') }}">
+                            <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
+                            <button type="submit" {% if not priority.claim_ready %}disabled{% endif %}>Claim Reward</button>
+                        </form>
+                    </div>
+                {% else %}
                 <a href="{{ priority.href }}">{{ priority.cta }} <span aria-hidden="true">→</span></a>
+                {% endif %}
             </article>
         {% endfor %}
     </div>

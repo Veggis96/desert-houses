@@ -878,6 +878,8 @@ def dashboard_priorities(village, rates, capacity, buildings, construction_queue
             priorities[-1]["href"] += "#tutorial-objective"
         else:
             add("primary", f"Guidance {tutorial['index']}/{tutorial['total']}", step["title"], step["text"], endpoint, "Continue objective")
+        priorities[-1]["tutorial_claim"] = True
+        priorities[-1]["claim_ready"] = tutorial["ready"]
 
     if not construction_queue:
         candidates = [card for card in building_cards if card["can_upgrade"]]
@@ -3410,10 +3412,10 @@ def register():
                 flash("Enter the invite code provided by the game host.")
                 status = 400
             elif not re.fullmatch(r"[A-Za-z0-9_-]{3,24}", username):
-                flash("Username must be 3–24 letters, numbers, underscores or hyphens.")
+                flash("Username must be 3â€“24 letters, numbers, underscores or hyphens.")
                 status = 400
             elif not valid_signup_password(password):
-                flash("Use a password or passphrase of 15–128 characters.")
+                flash("Use a password or passphrase of 15â€“128 characters.")
                 status = 400
             elif password != confirmation:
                 flash("Passwords do not match. Enter them again.")
@@ -3517,7 +3519,7 @@ def account_settings():
                 flash("Current password is incorrect.")
                 return render_template("account.html", user=user), 400
             if not valid_signup_password(password) or password != request.form.get("confirm_password", ""):
-                flash("Use matching new passwords of 15–128 characters.")
+                flash("Use matching new passwords of 15â€“128 characters.")
                 return render_template("account.html", user=user), 400
             db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_account_password(password), user["id"]))
             db.execute("DELETE FROM login_sessions WHERE user_id = ?", (user["id"],))
@@ -3938,17 +3940,17 @@ def plan_map_mission(tile_id):
         if mission not in ("raid", "capture"):
             risk = "No combat estimate for this mission"
         elif defense is None:
-            risk = "Unknown — scout first"
+            risk = "Unknown â€” scout first"
         elif stale:
-            risk = "Uncertain — scouting is over an hour old"
+            risk = "Uncertain â€” scouting is over an hour old"
         elif intel["controller_village_id"] and not owned:
-            risk = "Uncertain — enemy research and faction bonuses are not included"
+            risk = "Uncertain â€” enemy research and faction bonuses are not included"
         elif effective_attack < defense:
-            risk = "High — selected attack is below known defense"
+            risk = "High â€” selected attack is below known defense"
         elif effective_attack < defense * 1.3:
-            risk = "Moderate — little margin above known defense"
+            risk = "Moderate â€” little margin above known defense"
         else:
-            risk = "Lower — margin above known defense; losses remain possible"
+            risk = "Lower â€” margin above known defense; losses remain possible"
         harvest_duration = HARVEST_POLICIES.get(request.args.get("harvest_policy", "balanced"), HARVEST_POLICIES["balanced"])["duration_seconds"] if mission == "harvest" else 0
         return jsonify(attack=round(attack, 1), durability=round(durability, 1), carry=carry,
                        shield=round(combat_profile["shield"], 1),
@@ -5585,7 +5587,7 @@ def dev_reset_password():
         username = request.form.get("username", "").strip()
         new_password = request.form.get("new_password", "")
         if not username or not valid_signup_password(new_password):
-            flash("Username and a new password of 15–128 characters are required.")
+            flash("Username and a new password of 15â€“128 characters are required.")
             return redirect(url_for("dev_reset_password"))
         with get_db() as db:
             user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
