@@ -873,7 +873,7 @@ def dashboard_priorities(village, rates, capacity, buildings, construction_queue
         else:
             endpoint = "dashboard"
         if tutorial["ready"]:
-            add("primary", f"Guidance {tutorial['index']}/{tutorial['total']}", step["title"] + " — complete",
+            add("primary", f"Guidance {tutorial['index']}/{tutorial['total']}", step["title"] + " - complete",
                 "Objective complete. Claim your reward to advance to the next objective.", "dashboard", "Claim reward")
             priorities[-1]["href"] += "#tutorial-objective"
         else:
