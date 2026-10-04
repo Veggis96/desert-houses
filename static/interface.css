@@ -576,3 +576,16 @@ tbody tr:hover { background: #ffffff03; }
     .overview-panel .base-plot-map .base-plot .building-label { font-size: 8px; }
     .overview-panel .building-detail.unbuilt-detail.active { grid-template-columns: 1fr; }
 }
+
+/* Keep the central tower inside its plot, clear of the two northern sites. */
+.overview-panel .scene-art-map.base-plot-map .slot-center {
+    --plot-art-width: 58%;
+    --ground-anchor: -50%;
+}
+.overview-panel .base-plot-map .slot-center .base-building-art {
+    width: var(--plot-art-width);
+    transform: translate(-50%, var(--ground-anchor));
+}
+.overview-panel .base-plot-map .base-building-art {
+    pointer-events: none;
+}
