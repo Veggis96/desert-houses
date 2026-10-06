@@ -622,3 +622,8 @@ tbody tr:hover { background: #ffffff03; }
 .guidance-actions form { margin: 0; }
 .guidance-actions a { color: var(--accent); font-size: 12px; font-weight: 700; }
 .guidance-actions button { padding: 8px 14px; font-size: 12px; }
+
+.priority-card.reward-ready { border-color: var(--accent); background: linear-gradient(120deg, #283324, #171d18); }
+.objective-status { align-self: flex-start; color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+.objective-status.ready { color: #c9e1aa; border: 1px solid #91b66d70; background: #91b66d15; border-radius: 20px; padding: 4px 10px; }
+.messages .message-construction { border-left: 3px solid #a8c986; padding-left: 12px; color: #d0e5b6; }

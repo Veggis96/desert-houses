@@ -65,10 +65,17 @@
     </div>
     <div class="priority-grid">
         {% for priority in priorities %}
-            <article class="priority-card {{ priority.tone }}">
+            <article class="priority-card {{ priority.tone }} {% if priority.tutorial_claim and priority.claim_ready %}reward-ready{% endif %}">
                 <p class="eyebrow">{{ priority.eyebrow }}</p>
                 <h3>{{ priority.title }}</h3>
                 <p>{{ priority.text }}</p>
+                {% if priority.tutorial_claim %}
+                    {% if priority.claim_ready %}
+                        <span class="objective-status ready" role="status">Reward available</span>
+                    {% elif tutorial.building_progress %}
+                        <span class="objective-status">{{ tutorial.building_progress }}</span>
+                    {% endif %}
+                {% endif %}
                 {% if priority.tutorial_claim %}
                     <div class="guidance-actions">
                         {% if not priority.claim_ready %}

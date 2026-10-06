@@ -9,7 +9,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import g, abort, jsonify, Flask, flash, redirect, render_template, request, session, url_for
+from flask import has_request_context, g, abort, jsonify, Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -1444,6 +1444,16 @@ def process_construction_queue(db, village_id):
             (item["target_level"], village_id, item["building_key"]),
         )
         db.execute("DELETE FROM construction_queue WHERE id = ?", (item["id"],))
+        if has_request_context() and session.get("user_id"):
+            owner = db.execute(
+                "SELECT users.id, factions.slug FROM villages JOIN users ON users.id = villages.user_id "
+                "JOIN factions ON factions.id = users.faction_id WHERE villages.id = ?", (village_id,)
+            ).fetchone()
+            if owner and owner["id"] == session["user_id"]:
+                name = building_display_name(item["building_key"], owner["slug"])
+                action = "constructed" if item["target_level"] == 1 else "upgraded"
+                flash(f"{name} {action} to level {item['target_level']}.", "construction")
+
         start_anchor = finish_at
 
 
@@ -3273,6 +3283,10 @@ def get_tutorial_state(db, user, buildings):
         "total": len(TUTORIAL_STEPS),
         "step": step,
         "ready": is_ready,
+        "building_progress": (
+            f"Current level {buildings.get(step['building'], 0)} / {step['level']} required"
+            if "building" in step else None
+        ),
     }
 
 
