@@ -52,9 +52,6 @@
                 {% endfor %}
             </select>
         </label>
-        <label for="quick-section" id="quick-section-label" hidden>On this page
-            <select id="quick-section"><option value="">Jump to section</option></select>
-        </label>
         <button type="button" id="quick-top">Back to top</button>
     </nav>
     {% endif %}
@@ -81,24 +78,6 @@
             document.getElementById("quick-page")?.addEventListener("change", event => {
                 if (event.target.value) window.location.assign(event.target.value);
             });
-            const sections = document.getElementById("quick-section");
-            if (sections) {
-                document.querySelectorAll("main h2").forEach((heading, index) => {
-                    const target = heading.closest("section") || heading;
-                    if (!target.id) target.id = "page-section-" + index;
-                    target.tabIndex = -1;
-                    const option = document.createElement("option");
-                    option.value = target.id;
-                    option.textContent = heading.textContent.trim();
-                    sections.append(option);
-                });
-                document.getElementById("quick-section-label").hidden = sections.options.length <= 1;
-                sections.addEventListener("change", () => {
-                    const target = document.getElementById(sections.value);
-                    if (target) { target.scrollIntoView({block: "start"}); target.focus({preventScroll: true}); }
-                    sections.value = "";
-                });
-            }
             document.getElementById("quick-top")?.addEventListener("click", () => {
                 window.scrollTo({top: 0});
                 document.getElementById("main-content").focus({preventScroll: true});

@@ -650,3 +650,62 @@ main section, main h2 { scroll-margin-top: calc(var(--header-height, 190px) + 16
     .quick-navigation select { min-width: 0; max-width: none; width: 100%; font-size: 12px; }
     .quick-navigation button { white-space: nowrap; padding: 6px; }
 }
+
+/* Compact game interface: spend screen space on controls instead of padding. */
+body.is-game { font-size: 13px; line-height: 1.4; }
+.is-game .site-header .topbar { min-height: 50px; padding-block: 7px; gap: 12px; }
+.is-game .brand-mark { font-size: 28px; }
+.is-game .brand { font-size: 13px; gap: 8px; }
+.is-game .brand small { display: none; }
+.is-game .topbar nav a { padding: 6px 10px; font-size: 12px; }
+.is-game .global-resources { padding-block: 5px; gap: 12px; }
+.is-game .global-resource { font-size: 11px; gap: 2px 6px; }
+.is-game .global-resource meter { height: 3px; }
+.is-game .quick-navigation { padding-block: 4px; }
+.is-game .quick-navigation select { padding-block: 4px; }
+.is-game .page { padding-top: 14px; padding-bottom: 32px; }
+.is-game .base-layout { grid-template-columns: 165px minmax(0, 1fr); gap: 18px; }
+.is-game .base-sidebar { padding-block: 4px; }
+.is-game .base-sidebar > .eyebrow { margin-bottom: 8px; }
+.is-game .base-tab { padding: 7px 10px; }
+.is-game .base-tab span { font-size: 12px; }
+.is-game .base-tab small { font-size: 10px; }
+.is-game .hero { padding-bottom: 10px; margin-bottom: 12px; gap: 12px; }
+.is-game .hero h1 { font-size: clamp(23px, 2.3vw, 30px); margin-block: 4px; }
+.is-game .hero p { margin-top: 5px; }
+.is-game .eyebrow { margin-bottom: 5px; }
+.is-game .panel, .is-game .messages, .is-game .warning { padding: 12px; }
+.is-game .panel h2 { font-size: 17px; }
+.is-game .section-heading { margin-bottom: 10px; gap: 8px; }
+.is-game .spaced-panel { margin-top: 12px; }
+.is-game .resource-grid { gap: 8px; margin-bottom: 12px; }
+.is-game .resource-card { padding: 10px 12px; }
+.is-game .resource-card strong { font-size: 22px; }
+.is-game .priority-card { min-height: 125px; padding: 12px; }
+.is-game .priority-card h3 { font-size: 15px; }
+.is-game .priority-card > p:not(.eyebrow) { margin-bottom: 10px; }
+.is-game .priority-heading h2 { font-size: 20px; }
+.is-game .priority-section { margin-bottom: 12px; }
+.is-game .quick-actions { gap: 6px; margin-bottom: 12px; }
+.is-game .quick-actions a { padding: 7px 10px; }
+.is-game .building-card { padding: 12px; }
+.is-game .upgrade-preview { padding: 8px; }
+.is-game .upgrade-preview p { margin-block: 6px; }
+.is-game .cost-list { gap: 6px; margin-block: 8px; }
+.is-game .base-building-picker { margin-bottom: 8px; }
+.is-game .base-zoom-control { margin-bottom: 8px; }
+.is-game .base-overview-frame { max-width: 940px; width: 100%; margin-inline: auto; }
+.is-game .overview-panel .building-detail.active { gap: 14px; }
+.is-game .overview-panel .detail-art img { width: 110px; height: 110px; }
+.is-game .overview-panel .base-detail-copy h3 { font-size: 19px; }
+@media (max-width: 960px) {
+    .is-game .base-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+    .is-game .site-header .topbar { padding: 6px 10px; }
+    .is-game .topbar nav a { min-height: 36px; display: inline-flex; align-items: center; }
+    .is-game .quick-navigation select, .is-game .quick-navigation button { min-height: 36px; }
+    .is-game .page { padding: 10px 12px 24px; }
+    .is-game .priority-card { min-height: 0; }
+    .is-game button, .is-game input:not([type="range"]):not([type="hidden"]), .is-game .button-link { min-height: 40px; }
+}
