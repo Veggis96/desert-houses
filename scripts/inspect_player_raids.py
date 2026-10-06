@@ -1,6 +1,7 @@
 """Read-only raid balance diagnostics. Never imports the game or reads auth secrets."""
 import argparse
 from collections import Counter
+from contextlib import closing
 from datetime import datetime
 import json
 from pathlib import Path
@@ -9,7 +10,7 @@ import sqlite3
 
 def inspect(db_path, username, limit=20):
     path = Path(db_path).expanduser().resolve()
-    with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as db:
+    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
         db.row_factory = sqlite3.Row
         db.execute('PRAGMA query_only=ON')
         db.execute('BEGIN')
