@@ -2858,6 +2858,12 @@ def deathstill_water_yield(unit_key, level):
 
 def build_building_cards(village, buildings, construction_queue, research_levels, faction_slug, building_keys=None):
     cards = []
+    now = utc_now()
+    queue_wait = sum(
+        max(0, (parse_time(item["finish_at"]) - now).total_seconds())
+        if item["finish_at"] else item["duration_seconds"]
+        for item in construction_queue
+    )
     refinery_ratio = spice_refinery_conversion_ratio(research_levels)
     effective_spice_field_level = effective_building_level(buildings, construction_queue, "spice_field")
     field_sand_rate = production_for("spice_field", effective_spice_field_level, faction_slug)
@@ -2877,6 +2883,14 @@ def build_building_cards(village, buildings, construction_queue, research_levels
                 "level": level,
                 "effective_level": effective_level,
                 "duration": construction_duration_seconds(effective_level, research_levels),
+                "queue_wait_seconds": math.ceil(queue_wait),
+                "completion_at": (now + timedelta(seconds=queue_wait + construction_duration_seconds(effective_level, research_levels))).isoformat(),
+                "requirements_progress": [
+                    {"name": building_display_name(required, faction_slug),
+                     "current": buildings.get(required, 0), "required": target,
+                     "met": buildings.get(required, 0) >= target}
+                    for required, target in config.get("requires", {}).items()
+                ],
                 "production_before": spice_refinery_output_rate(effective_level, faction_slug, research_levels) if key == "spice_refinery" else production_for(key, effective_level, faction_slug),
                 "production_after": spice_refinery_output_rate(effective_level + 1, faction_slug, research_levels) if key == "spice_refinery" else production_for(key, effective_level + 1, faction_slug),
                 "storage_before": 1000 + effective_level * 500,

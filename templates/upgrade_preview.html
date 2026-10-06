@@ -1,5 +1,14 @@
 <div class="upgrade-preview">
     <div><strong>Level {{ upgrade_card.effective_level }} → {{ upgrade_card.effective_level + 1 }}</strong><span>{{ upgrade_card.duration }}s build time</span></div>
+    <p class="upgrade-arrival">Estimated finish if queued now: <time class="local-completion-time" datetime="{{ upgrade_card.completion_at }}">{{ upgrade_card.completion_at }}</time></p>
+    {% if upgrade_card.queue_wait_seconds %}<small>Includes {{ upgrade_card.queue_wait_seconds }}s waiting for queued construction.</small>{% endif %}
+    {% if upgrade_card.requirements_progress %}
+        <div class="unlock-progress" aria-label="Building requirements">
+            {% for requirement in upgrade_card.requirements_progress %}
+                <span class="{{ 'met' if requirement.met else 'unmet' }}">{{ 'Ready' if requirement.met else 'Requires' }}: {{ requirement.name }} level {{ requirement.required }} (current {{ requirement.current }})</span>
+            {% endfor %}
+        </div>
+    {% endif %}
     {% if upgrade_card.key == 'spice_refinery' %}
         <p>Melange output <strong>{{ upgrade_card.production_before|round(1) }} → {{ upgrade_card.production_after|round(1) }}/hour</strong></p>
         <small>Consumes {{ upgrade_card.conversion_ratio }} Spice Sand per Melange. Efficiency improves through Melange Processing research.</small>

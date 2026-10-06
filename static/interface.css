@@ -627,3 +627,9 @@ tbody tr:hover { background: #ffffff03; }
 .objective-status { align-self: flex-start; color: var(--muted); font-size: 12px; margin-bottom: 14px; }
 .objective-status.ready { color: #c9e1aa; border: 1px solid #91b66d70; background: #91b66d15; border-radius: 20px; padding: 4px 10px; }
 .messages .message-construction { border-left: 3px solid #a8c986; padding-left: 12px; color: #d0e5b6; }
+
+.unlock-progress { display: grid; gap: 5px; margin-block: 10px; font-size: 12px; }
+.unlock-progress .met { color: #b6d591; }
+.unlock-progress .unmet { color: #e1bd83; }
+.upgrade-arrival { font-size: 12px; }
+.local-completion-time { color: var(--accent); }
