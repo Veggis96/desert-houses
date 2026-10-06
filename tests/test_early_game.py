@@ -74,7 +74,7 @@ class EarlyGameTests(unittest.TestCase):
                         tile = db.execute("SELECT * FROM map_tiles WHERE tile_type = 'iron_outcrop' ORDER BY ABS(x - ?) + ABS(y - ?) LIMIT 1", (village["map_x"], village["map_y"])).fetchone()
                     force = snapshot()[2]
                     client.post(f"/map/{tile['id']}/send", data={f"unit_{key}": amount for key, amount in force.items()})
-                    duration = game.movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], force)
+                    duration = game.movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], force, mission="raid")
                     advance(duration + 1)
                     client.post("/tutorial/claim")
                     client.post("/tutorial/claim")  # reading is required for the next reward

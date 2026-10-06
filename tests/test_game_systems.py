@@ -38,7 +38,7 @@ class GameSystemsTests(unittest.TestCase):
         self.assertEqual(data["carry"], 60)
         with game.get_db() as db:
             village = db.execute("SELECT * FROM villages WHERE id = ?", (self.village_id,)).fetchone()
-            duration = game.movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], {"knife_fighter": 3}, "atreides")
+            duration = game.movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], {"knife_fighter": 3}, "atreides", mission="raid")
             self.assertEqual(data["travel_seconds"], duration)
             self.assertEqual(db.execute("SELECT COUNT(*) FROM troop_movements").fetchone()[0], before)
             self.assertEqual(game.get_village_units(db, self.village_id)["knife_fighter"], 3)
@@ -81,7 +81,7 @@ class GameSystemsTests(unittest.TestCase):
             movement = db.execute("SELECT * FROM troop_movements WHERE mission_type = 'raid'").fetchone()
             duration = (game.parse_time(movement["arrive_at"]) - game.parse_time(movement["started_at"])).total_seconds()
             self.assertEqual(data["travel_seconds"], duration)
-            self.assertLess(duration, game.movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], {"knife_fighter": 3}))
+            self.assertLess(duration, game.movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], {"knife_fighter": 3}, mission="raid"))
 
     def test_alliance_goal_permissions_and_live_ownership(self):
         with game.get_db() as db:

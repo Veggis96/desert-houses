@@ -1805,11 +1805,11 @@ def map_tile_resources(tile_type, distance, rng=None):
         resources["spice"] = 600 + distance * 12 + rng.randint(150, 350)
         resources["water"] = 60 + rng.randint(20, 100)
     elif tile_type == "water_oasis":
-        resources["water"] = base + rng.randint(40, 140)
+        resources["water"] = 30 + distance * 2 + rng.randint(10, 25)
     elif tile_type == "iron_outcrop":
-        resources["iron"] = base + rng.randint(40, 160)
+        resources["iron"] = 30 + distance * 2 + rng.randint(10, 25)
     elif tile_type == "scrap_field":
-        resources["wood"] = base + rng.randint(40, 160)
+        resources["wood"] = 30 + distance * 2 + rng.randint(10, 25)
     return resources
 
 
@@ -2041,10 +2041,13 @@ def regenerate_map_tiles(db):
     for tile in rows:
         last = parse_time(tile["last_regenerated_at"])
         intervals = int((now - last).total_seconds() // MAP_REGEN_INTERVAL_SECONDS)
-        if intervals <= 0:
-            continue
         distance = max(abs(tile["x"]), abs(tile["y"]), 1)
         cap = map_tile_resources(tile["tile_type"], distance, random.Random(tile["x"] * 1009 + tile["y"] * 9176))
+        if tile["tile_type"] in ("water_oasis", "iron_outcrop", "scrap_field"):
+            db.execute("UPDATE map_tiles SET resource_iron=MIN(resource_iron,?), resource_wood=MIN(resource_wood,?), resource_water=MIN(resource_water,?) WHERE id=?",
+                       (cap["iron"], cap["wood"], cap["water"], tile["id"]))
+        if intervals <= 0:
+            continue
         increments = {
             "iron": max(int(cap["iron"] * 0.12), 0) * intervals,
             "wood": max(int(cap["wood"] * 0.12), 0) * intervals,
@@ -2089,7 +2092,7 @@ def map_distance(source_x, source_y, target_x, target_y):
     return math.hypot(target_x - source_x, target_y - source_y)
 
 
-def movement_duration_seconds(source_x, source_y, target_x, target_y, sent_units, faction_slug=None):
+def movement_duration_seconds(source_x, source_y, target_x, target_y, sent_units, faction_slug=None, mission=None):
     sent_units = normalize_player_units(sent_units)
     carryalls = sent_units.get("carryall", 0)
     transported = sum(
@@ -2106,7 +2109,8 @@ def movement_duration_seconds(source_x, source_y, target_x, target_y, sent_units
     else:
         slowest_speed = min(faction_unit_stat(key, "speed", faction_slug) for key, amount in sent_units.items() if amount > 0)
     distance = max(map_distance(source_x, source_y, target_x, target_y), 1)
-    return max(int(distance / slowest_speed * 60), 8)
+    duration = max(int(distance / slowest_speed * 60), 8)
+    return max(duration * 8, 60) if mission == "raid" else duration
 
 
 def sent_unit_stats(sent_units, research_levels):
@@ -2591,7 +2595,7 @@ def process_troop_movements(db, village_id):
                 db.execute("UPDATE map_tiles SET npc_strength = ?, npc_units_json = ? WHERE id = ?", (npc_units_defense(enemy_after_units), npc_units_json(enemy_after_units), tile["id"]))
             outcome, report = "Defeat", "Raid failed. Survivors are retreating home." if survivors else "Raid failed. No units survived."
         create_battle_report(db, village, movement, tile, outcome, sent_units, survivors, enemy_before_units, enemy_after_units, loot, combat=combat)
-        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], survivors or sent_units, village_faction(db, village)))
+        return_at = now + timedelta(seconds=movement_duration_seconds(village["map_x"], village["map_y"], movement["target_x"], movement["target_y"], survivors or sent_units, village_faction(db, village), mission="raid"))
         db.execute("UPDATE troop_movements SET status = 'returning', survivors_json = ?, return_at = ?, loot_iron = ?, loot_wood = ?, loot_water = ?, loot_spice = ?, report = ? WHERE id = ?", (player_units_json(survivors), return_at.isoformat(), loot["iron"], loot["wood"], loot["water"], loot["spice"], report, movement["id"]))
     harvesting = db.execute("SELECT * FROM troop_movements WHERE village_id = ? AND status = 'harvesting' ORDER BY return_at ASC", (village_id,)).fetchall()
     for movement in harvesting:
@@ -3946,7 +3950,7 @@ def plan_map_mission(tile_id):
         research = get_research_levels(db, village["id"])
         attack, durability, carry = sent_unit_stats(selected, research)
         combat_profile = player_combat_profile(selected, research)
-        travel = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], selected, user["faction_slug"])
+        travel = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], selected, user["faction_slug"], mission=mission)
         owned = tile["controller_village_id"] == village["id"]
         intel = tile if owned else get_tile_intel(db, user["id"], tile_id)
         now = utc_now()
@@ -4069,7 +4073,7 @@ def send_map_raid(tile_id):
             return redirect(next_url)
         for key, amount in sent_units.items():
             remove_village_units(db, village["id"], key, amount)
-        duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units, village_faction(db, village))
+        duration = movement_duration_seconds(village["map_x"], village["map_y"], tile["x"], tile["y"], sent_units, village_faction(db, village), mission="raid")
         now = utc_now()
         db.execute(
             """
