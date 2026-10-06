@@ -42,6 +42,22 @@
         {% endfor %}
     </section>
     {% endif %}
+    {% if session.get('user_id') %}
+    <nav class="quick-navigation" aria-label="Quick navigation">
+        <label for="quick-page">Go to
+            <select id="quick-page">
+                <option value="">Choose page</option>
+                {% for endpoint, label in [('dashboard', 'Base overview'), ('resource_fields_page', 'Resource fields'), ('command_center_page', 'Command Center'), ('barracks_page', 'Barracks'), ('vehicle_workshop_page', 'Vehicle Workshop'), ('flight_works_page', 'Flight Works'), ('research_center_page', 'Research Center'), ('influence_sanctuary_page', 'Influence sanctuary'), ('deathstill_page', 'Deathstill'), ('map_page', 'World map'), ('inbox', 'Reports'), ('alliances', 'Alliances'), ('leaderboard', 'Leaderboard'), ('account_settings', 'Account')] %}
+                <option value="{{ url_for(endpoint) }}" {% if request.endpoint == endpoint %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label for="quick-section" id="quick-section-label" hidden>On this page
+            <select id="quick-section"><option value="">Jump to section</option></select>
+        </label>
+        <button type="button" id="quick-top">Back to top</button>
+    </nav>
+    {% endif %}
     </div>
 
     <main class="page" id="main-content" tabindex="-1">
@@ -57,6 +73,38 @@
         {% block content %}{% endblock %}
     </main>
     <script nonce="{{ csp_nonce }}">
+        (() => {
+            const header = document.querySelector(".site-header");
+            const updateOffset = () => document.documentElement.style.setProperty("--header-height", header.offsetHeight + "px");
+            updateOffset();
+            new ResizeObserver(updateOffset).observe(header);
+            document.getElementById("quick-page")?.addEventListener("change", event => {
+                if (event.target.value) window.location.assign(event.target.value);
+            });
+            const sections = document.getElementById("quick-section");
+            if (sections) {
+                document.querySelectorAll("main h2").forEach((heading, index) => {
+                    const target = heading.closest("section") || heading;
+                    if (!target.id) target.id = "page-section-" + index;
+                    target.tabIndex = -1;
+                    const option = document.createElement("option");
+                    option.value = target.id;
+                    option.textContent = heading.textContent.trim();
+                    sections.append(option);
+                });
+                document.getElementById("quick-section-label").hidden = sections.options.length <= 1;
+                sections.addEventListener("change", () => {
+                    const target = document.getElementById(sections.value);
+                    if (target) { target.scrollIntoView({block: "start"}); target.focus({preventScroll: true}); }
+                    sections.value = "";
+                });
+            }
+            document.getElementById("quick-top")?.addEventListener("click", () => {
+                window.scrollTo({top: 0});
+                document.getElementById("main-content").focus({preventScroll: true});
+            });
+        })();
+
         document.querySelectorAll(".local-completion-time").forEach((time) => {
             const date = new Date(time.dateTime);
             if (!Number.isNaN(date.getTime())) {
