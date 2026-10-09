@@ -94,6 +94,11 @@
                         {% for resource, amount in unit.missing_resources.items() %}<span>Need {{ amount }} more {{ resource_display_name(resource) }}</span>{% endfor %}
                     </div>
                 {% endif %}
+                <div class="training-preview" data-training-preview data-cost='{{ unit.cost|tojson }}' data-max="{{ unit.max_affordable }}" data-water-rate="{{ unit.water_after_queue }}" data-upkeep="{{ unit.water_upkeep }}" data-water-stock="{{ unit.water_stock }}" data-training-factor="{{ unit.training_factor }}">
+                    <p>Affordable now: <strong>{{ unit.max_affordable }}</strong> <button type="button" class="train-max" {% if not unit.unlocked or unit.max_affordable == 0 %}disabled{% endif %}>Use max</button></p>
+                    <p class="training-total"></p>
+                    <p class="training-water" role="status"></p>
+                </div>
                 <form method="post" action="{{ url_for('train_unit', unit_key=unit.key) }}">
         <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
                     <input type="hidden" name="next" value="{{ request.path }}">
@@ -107,6 +112,7 @@
 </div>
 </div>
 
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='training-preview.js') }}"></script>
 <script nonce="{{ csp_nonce }}">
     (() => {
         const timers = Array.from(document.querySelectorAll(".unit-training-item[data-finish-at]"));

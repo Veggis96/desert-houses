@@ -138,3 +138,5 @@ Game pages use no-store caching, script nonces, anti-framing and content-type se
 ## Free public hosting
 
 See [PythonAnywhere setup](docs/PYTHONANYWHERE.md) for deployment using a free game-named address.
+
+Player saves and encrypted backup/update instructions: [Player progress protection](docs/PLAYER_PROGRESS.md).

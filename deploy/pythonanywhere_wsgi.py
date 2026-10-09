@@ -7,6 +7,8 @@ import sys
 os.umask(0o077)
 home = Path.home()
 settings = json.loads((home / '.desert-houses' / 'config.json').read_text())
+if not Path(settings['GAME_DB_PATH']).is_file():
+    raise RuntimeError('Game database is missing. Restore the save before serving players.')
 os.environ.update(settings)
 project = home / 'desert-houses'
 sys.path.insert(0, str(project))

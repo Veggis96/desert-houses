@@ -13,9 +13,12 @@ def main():
     os.umask(0o077)
     data.mkdir(mode=0o700, exist_ok=True)
     data.chmod(0o700)
-    if config.exists():
+    existing = config.exists()
+    if existing:
         settings = json.loads(config.read_text())
     else:
+        if (data / 'game.db').exists():
+            raise RuntimeError('Existing save has no signing config. Recover config.json before setup.')
         settings = {
             'GAME_ENV': 'production',
             'SECRET_KEY': secrets.token_hex(32),
@@ -30,6 +33,10 @@ def main():
     config.chmod(0o600)
     os.environ.update(settings)
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    if existing:
+        from scripts.game_backup import snapshot
+        backup, _key = snapshot(config)
+        print('Verified backup before database initialization:', backup)
     import app
     app.init_db()
     Path(app.DB_PATH).chmod(0o600)

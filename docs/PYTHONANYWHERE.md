@@ -11,7 +11,7 @@ Open a Bash console on PythonAnywhere:
 git clone https://github.com/Veggis96/desert-houses.git ~/desert-houses
 cd ~/desert-houses
 mkvirtualenv --python=/usr/bin/python3.13 desert-houses
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-backup.txt
 python scripts/setup-pythonanywhere.py
 ```
 
@@ -35,10 +35,10 @@ Register a test player, log out, log back in, and check buildings and map action
 
 ## Updates and free-plan limits
 
-In Bash: `workon desert-houses`, `cd ~/desert-houses`, `git pull --ff-only`, `pip install -r requirements.txt`, `python scripts/setup-pythonanywhere.py`; then reload in the Web tab. Back up player data before updates.
+Use the backup-first update command in [Player progress protection](PLAYER_PROGRESS.md). It preserves the save directory, backs up before pulling changes, and initializes the schema before you reload.
 
 The free plan has one worker, 512 MiB storage, a monthly web-app expiry renewal, and no scheduled tasks for new accounts. It is appropriate for an initial small-player trial; capacity has not been measured. Check expiry and disk usage in the dashboard regularly.
 
-Encrypted backups have not yet been configured by these deployment files. Do not treat the host's persistent storage as a backup. Keep consistent SQLite backups separately, encrypt them before downloading, and protect the encryption key separately. Hosting-provider disk encryption has not been verified here.
+Encrypted backup and restore tools are now available: follow [Player progress protection](PLAYER_PROGRESS.md) to install them and keep separate copies. These tools are not active on the live host until you run the installation steps.
 
 Sources: [Flask setup](https://help.pythonanywhere.com/pages/Flask/), [HTTPS](https://help.pythonanywhere.com/pages/HTTPSSetup/), [free account limits](https://help.pythonanywhere.com/pages/FreeAccountsFeatures).

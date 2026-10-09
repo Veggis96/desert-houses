@@ -11,3 +11,5 @@ game.db
 .env.*
 *.pem
 *.key
+
+*.fernet

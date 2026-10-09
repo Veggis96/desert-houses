@@ -2748,6 +2748,10 @@ def effective_unit_stat(unit_key, stat, research_levels):
 def build_unit_cards(village, buildings, research_levels, units, unit_queue, faction_slug, category):
     unit_queue_full = len(unit_queue) >= UNIT_QUEUE_LIMIT
     cards = []
+    projected_units = dict(units)
+    for queued in unit_queue:
+        projected_units[queued["unit_key"]] = projected_units.get(queued["unit_key"], 0) + queued["amount"]
+    projected_water = resource_rates(buildings, faction_slug, projected_units, research_levels)["water"]
     for key, config in UNIT_TYPES.items():
         if config["category"] != category:
             continue
@@ -2776,6 +2780,10 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "carry": config["carry"],
                 "water_upkeep": faction_unit_stat(key, "water_upkeep", faction_slug),
                 "training_time": unit_training_duration(key, 1, research_levels),
+                "max_affordable": min([999] + [int(village[resource] // price) for resource, price in cost.items() if price > 0]),
+                "water_after_queue": projected_water,
+                "water_stock": village["water"],
+                "training_factor": config["training_time"] * (1 - min(research_levels.get("unit_training_speed", 0) * 0.05, 0.5)),
                 "cost": cost,
                 "missing_resources": missing_resources(village, cost),
                 "storage_required_level": required_warehouse_level(cost) if max(cost.values(), default=0) > storage_capacity(buildings) else None,

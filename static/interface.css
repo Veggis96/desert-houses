@@ -711,3 +711,8 @@ body.is-game { font-size: 13px; line-height: 1.4; }
 }
 
 .storage-blocker { color: #e1bd83; font-weight: 600; }
+
+.training-preview { padding: 8px; margin-block: 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+.training-preview p { margin: 5px 0; }
+.training-preview .train-max { padding: 4px 8px; margin-left: 8px; }
+.water-warning { color: #e1bd83; }
