@@ -2778,6 +2778,7 @@ def build_unit_cards(village, buildings, research_levels, units, unit_queue, fac
                 "training_time": unit_training_duration(key, 1, research_levels),
                 "cost": cost,
                 "missing_resources": missing_resources(village, cost),
+                "storage_required_level": required_warehouse_level(cost) if max(cost.values(), default=0) > storage_capacity(buildings) else None,
                 "queue_full": unit_queue_full,
                 "can_train": unlocked and can_afford(village, cost) and not unit_queue_full,
             }
@@ -2811,6 +2812,7 @@ def build_research_cards(village, buildings, research_levels, research_queue, fa
                 "duration": research_duration_seconds(key, effective_level),
                 "requirement_text": prerequisite_text_for_buildings(building_unmet, faction_slug),
                 "missing_resources": missing_resources(village, cost),
+                "storage_required_level": required_warehouse_level(cost) if max(cost.values(), default=0) > storage_capacity(buildings) else None,
                 "queue_full": research_queue_full,
                 "can_research": can_afford_research and not building_unmet and not research_queue_full and not maxed,
                 "queued_count": queued_research_count(research_queue, key),
@@ -2897,8 +2899,8 @@ def build_building_cards(village, buildings, construction_queue, research_levels
                 ],
                 "production_before": spice_refinery_output_rate(effective_level, faction_slug, research_levels) if key == "spice_refinery" else production_for(key, effective_level, faction_slug),
                 "production_after": spice_refinery_output_rate(effective_level + 1, faction_slug, research_levels) if key == "spice_refinery" else production_for(key, effective_level + 1, faction_slug),
-                "storage_before": 1000 + effective_level * 500,
-                "storage_after": 1000 + (effective_level + 1) * 500,
+                "storage_before": storage_capacity({"warehouse": effective_level}),
+                "storage_after": storage_capacity({"warehouse": effective_level + 1}),
                 "deathstill_rate_before": deathstill_recovery_rate(effective_level) * 100 if key == "deathstill" else None,
                 "deathstill_rate_after": deathstill_recovery_rate(effective_level + 1) * 100 if key == "deathstill" else None,
                 "unlocks": [building_display_name(other, faction_slug) for other, definition in BUILDINGS.items()
@@ -2914,6 +2916,7 @@ def build_building_cards(village, buildings, construction_queue, research_levels
                 "field_coverage_after": min(field_sand_rate / max(spice_refinery_output_rate(effective_level + 1, faction_slug, research_levels) * refinery_ratio, 0.001) * 100, 100) if key == "spice_refinery" else 0,
                 "cost": cost,
                 "missing_resources": missing_resources(village, cost),
+                "storage_required_level": required_warehouse_level(cost) if max(cost.values(), default=0) > storage_capacity(buildings) else None,
                 "queue_full": queue_full,
                 "can_upgrade": can_upgrade,
                 "unmet_prerequisites": unmet,
@@ -3118,7 +3121,20 @@ def water_consumption_per_hour(buildings, units=None, faction_slug=None):
 
 
 def storage_capacity(buildings):
-    return 1000 + buildings.get("warehouse", 0) * 500
+    level = buildings.get("warehouse", 0)
+    linear_capacity = 1000 + level * 500
+    next_cost = max(upgrade_cost("warehouse", level).values())
+    # Keep early storage familiar; later tiers must fund their own next upgrade.
+    growth_capacity = math.ceil(next_cost * 1.25 / 500) * 500
+    return max(linear_capacity, growth_capacity)
+
+
+def required_warehouse_level(cost):
+    required = max(cost.values(), default=0)
+    level = 0
+    while storage_capacity({"warehouse": level}) < required:
+        level += 1
+    return level
 
 
 def update_resources(db, village, faction_slug):

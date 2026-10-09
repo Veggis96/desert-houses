@@ -709,3 +709,5 @@ body.is-game { font-size: 13px; line-height: 1.4; }
     .is-game .priority-card { min-height: 0; }
     .is-game button, .is-game input:not([type="range"]):not([type="hidden"]), .is-game .button-link { min-height: 40px; }
 }
+
+.storage-blocker { color: #e1bd83; font-weight: 600; }

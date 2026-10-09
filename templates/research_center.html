@@ -71,6 +71,9 @@
                     {% if research.cost.get('melange', 0) > 0 %}<span>Melange {{ research.cost.melange }}</span>{% endif %}
                     <span>{{ research.duration }}s</span>
                 </div>
+                {% if research.storage_required_level and not research.maxed %}
+                    <p class="storage-blocker">Requires Warehouse level {{ research.storage_required_level }} to store enough resources for this research.</p>
+                {% endif %}
                 {% if research.queue_full or research.missing_resources %}
                     <div class="requirement-list">
                         {% if research.queue_full %}<span>Research queue full</span>{% endif %}

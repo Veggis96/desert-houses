@@ -1,4 +1,7 @@
 <div class="upgrade-preview">
+    {% if upgrade_card.storage_required_level %}
+        <p class="storage-blocker">Requires Warehouse level {{ upgrade_card.storage_required_level }} to store enough resources for this upgrade.</p>
+    {% endif %}
     <div><strong>Level {{ upgrade_card.effective_level }} → {{ upgrade_card.effective_level + 1 }}</strong><span>{{ upgrade_card.duration }}s build time</span></div>
     <p class="upgrade-arrival">Estimated finish if queued now: <time class="local-completion-time" datetime="{{ upgrade_card.completion_at }}">{{ upgrade_card.completion_at }}</time></p>
     {% if upgrade_card.queue_wait_seconds %}<small>Includes {{ upgrade_card.queue_wait_seconds }}s waiting for queued construction.</small>{% endif %}
