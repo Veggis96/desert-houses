@@ -4389,6 +4389,15 @@ def mark_reports_read():
     return redirect(next_url)
 
 
+def raid_resource_balance(report, lost_units):
+    rows = []
+    for resource in ("iron", "wood", "water", "spice", "melange"):
+        replacement = sum(unit_training_cost(key, amount).get(resource, 0) for key, amount in lost_units.items() if key in UNIT_TYPES)
+        loot = report[f"loot_{resource}"] if resource != "melange" else 0
+        rows.append({"resource": resource, "loot": loot, "replacement": replacement, "net": loot - replacement})
+    return rows
+
+
 @app.route("/inbox/<int:report_id>")
 @login_required
 def battle_report(report_id):
@@ -4431,6 +4440,8 @@ def battle_report(report_id):
         enemy_is_player = bool(enemy_player_before)
         enemy_research = ResearchLevels({}, report["enemy_faction_slug"]) if enemy_is_player else None
         combat = json.loads(report["combat_json"] or "{}")
+        raid_balance = raid_resource_balance(report, lost_units) if report["report_type"] == "raid" else None
+        raid_movement = db.execute("SELECT status, return_at FROM troop_movements WHERE id=? AND village_id=?", (report["movement_id"], report["village_id"])).fetchone() if raid_balance else None
         if enemy_is_player:
             enemy_before_rows = player_unit_report_rows(enemy_player_before, report["enemy_faction_slug"], enemy_research)
             enemy_after_rows = player_unit_report_rows(enemy_player_after, report["enemy_faction_slug"], enemy_research)
@@ -4450,6 +4461,8 @@ def battle_report(report_id):
         enemy_lost_units=enemy_lost_rows,
         enemy_is_player=enemy_is_player,
         combat=combat,
+        raid_balance=raid_balance,
+        raid_movement=raid_movement,
     )
 
 

@@ -42,6 +42,24 @@
     {% endif %}
 </section>
 
+{% if raid_balance %}
+<section class="panel spaced-panel">
+    <h2>Loot and replacement costs</h2>
+    <table>
+        <thead><tr><th>Resource</th><th>Loot carried</th><th>Replace losses</th><th>Balance</th></tr></thead>
+        <tbody>{% for row in raid_balance %}
+            <tr><td>{{ resource_display_name(row.resource) }}</td><td>{{ row.loot|round|int }}</td><td>{{ row.replacement }}</td><td class="{{ 'raid-loss' if row.net < 0 else 'raid-gain' }}">{{ '%+d'|format(row.net|round|int) }}</td></tr>
+        {% endfor %}</tbody>
+    </table>
+    {% if raid_movement and raid_movement.status == 'complete' %}
+        <p class="muted">Returned: loot has been delivered to your base.</p>
+    {% elif raid_movement and raid_movement.status == 'returning' %}
+        <p class="muted">Loot is still travelling. Scheduled return: <time class="local-completion-time" datetime="{{ raid_movement.return_at }}">{{ raid_movement.return_at }}</time>.</p>
+    {% else %}<p class="muted">Delivery status is unavailable for this older report.</p>{% endif %}
+    <small>Replacement estimate uses current troop prices. Balance excludes upkeep, travel time, and storage limits.</small>
+</section>
+{% endif %}
+
 {% if combat.rounds %}
 <section class="panel combat-summary-panel">
     <div class="section-heading">

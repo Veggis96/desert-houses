@@ -716,3 +716,6 @@ body.is-game { font-size: 13px; line-height: 1.4; }
 .training-preview p { margin: 5px 0; }
 .training-preview .train-max { padding: 4px 8px; margin-left: 8px; }
 .water-warning { color: #e1bd83; }
+
+.raid-loss { color: #de8c72; }
+.raid-gain { color: #b6d591; }
