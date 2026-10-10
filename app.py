@@ -42,7 +42,7 @@ app.config.update(security_config())
 @app.context_processor
 def inject_global_counts():
     if "user_id" not in session:
-        return {"unread_report_count": 0, "resource_trend_label": resource_trend_label, "resource_display_name": resource_display_name}
+        return {"unread_report_count": 0, "resource_trend_label": resource_trend_label, "resource_display_name": resource_display_name, "affordability_estimate": affordability_estimate}
     with get_db() as db:
         row = db.execute(
             "SELECT COUNT(*) AS count FROM battle_reports WHERE user_id = ? AND is_read = 0",
@@ -61,7 +61,7 @@ def inject_global_counts():
                 key: min(capacity, max(0, village[key] + rate * elapsed / 3600))
                 for key, rate in rates.items()
             }}
-    return {"unread_report_count": row["count"] if row else 0, "resource_trend_label": resource_trend_label, "resource_display_name": resource_display_name, "resource_overview": overview}
+    return {"unread_report_count": row["count"] if row else 0, "resource_trend_label": resource_trend_label, "resource_display_name": resource_display_name, "resource_overview": overview, "affordability_estimate": affordability_estimate}
 
 
 FACTIONS = [
@@ -804,6 +804,26 @@ def compact_duration(seconds):
 
 def resource_display_name(resource):
     return {"spice": "Spice Sand", "melange": "Melange"}.get(resource, resource.capitalize())
+
+
+def affordability_estimate(cost, overview):
+    """Estimate passive production only; never promise future queue or raid income."""
+    if not overview:
+        return None
+    waits = []
+    for resource, price in cost.items():
+        amount = overview["amounts"].get(resource, 0)
+        if price <= amount:
+            continue
+        if price > overview["capacity"]:
+            return "Upgrade storage to afford this cost."
+        rate = overview["rates"].get(resource, 0)
+        if rate <= 0:
+            return f"Increase {resource_display_name(resource)} production to cover this cost."
+        waits.append((price - amount) / rate * 3600)
+    if not waits:
+        return None
+    return f"Resources ready in about {compact_duration(max(waits))} at current production."
 
 
 def resource_trend_label(amount, rate, capacity):

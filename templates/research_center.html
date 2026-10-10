@@ -71,6 +71,10 @@
                     {% if research.cost.get('melange', 0) > 0 %}<span>Melange {{ research.cost.melange }}</span>{% endif %}
                     <span>{{ research.duration }}s</span>
                 </div>
+                {% if not research.maxed %}
+                    {% set resource_wait = affordability_estimate(research.cost, resource_overview) %}
+                    {% if resource_wait %}<p class="muted">{{ resource_wait }} <small>Excludes future spending and queued production changes.</small></p>{% endif %}
+                {% endif %}
                 {% if research.storage_required_level and not research.maxed %}
                     <p class="storage-blocker">Requires Warehouse level {{ research.storage_required_level }} to store enough resources for this research.</p>
                 {% endif %}

@@ -719,3 +719,6 @@ body.is-game { font-size: 13px; line-height: 1.4; }
 
 .raid-loss { color: #de8c72; }
 .raid-gain { color: #b6d591; }
+
+.is-game .global-resource .stockpile-warning { grid-column: 1 / -1; color: #e5bd77; }
+.is-game .resource-deficit .stockpile-warning { color: #de8c72; }

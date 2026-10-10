@@ -1,4 +1,6 @@
 <div class="upgrade-preview">
+    {% set resource_wait = affordability_estimate(upgrade_card.cost, resource_overview) %}
+    {% if resource_wait %}<p class="muted">{{ resource_wait }} <small>Excludes future spending and queued production changes.</small></p>{% endif %}
     {% if upgrade_card.storage_required_level %}
         <p class="storage-blocker">Requires Warehouse level {{ upgrade_card.storage_required_level }} to store enough resources for this upgrade.</p>
     {% endif %}

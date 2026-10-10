@@ -33,11 +33,14 @@
     {% if resource_overview %}
     <section class="global-resources" aria-label="Resources and hourly production">
         {% for resource, amount in resource_overview.amounts.items() %}
-        <div class="global-resource {{ 'resource-deficit' if resource_overview.rates[resource] < 0 else '' }}">
+        <div class="global-resource {{ 'resource-deficit' if resource_overview.rates[resource] < 0 else '' }}" title="{{ resource_trend_label(amount, resource_overview.rates[resource], resource_overview.capacity) }}">
             <span>{{ resource_display_name(resource) }}</span>
             <strong>{{ amount|round(2) if resource == 'melange' else amount|round|int }} <small>/ {{ resource_overview.capacity }}</small></strong>
             <small>{{ ('%+.2f' if resource == 'melange' else '%+.1f')|format(resource_overview.rates[resource]) }}/h</small>
             <meter min="0" max="{{ resource_overview.capacity }}" value="{{ amount }}" aria-label="{{ resource_display_name(resource) }} storage"></meter>
+            {% if resource_overview.rates[resource] < 0 or (amount >= resource_overview.capacity * 0.9 and resource_overview.rates[resource] > 0) %}
+            <small class="stockpile-warning">{{ resource_trend_label(amount, resource_overview.rates[resource], resource_overview.capacity) }}</small>
+            {% endif %}
         </div>
         {% endfor %}
     </section>
