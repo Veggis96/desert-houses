@@ -10,7 +10,7 @@
         <p>Review scout intelligence, raid outcomes, troop losses, enemy losses, and loot gained.</p>
     </div>
     <div class="stat-stack">
-        <div class="capacity">Reports: {{ reports|length }}</div>
+        <div class="capacity">Reports: {{ total_reports }}</div>
         {% if filter_counts.unread > 0 %}
             <form method="post" action="{{ url_for('mark_reports_read') }}" class="inline-form">
         <input type="hidden" name="csrf_token" value="{{ auth_csrf_token }}">
@@ -54,8 +54,15 @@
                 </div>
             </article>
         {% else %}
-            <p class="muted">No battle reports yet. Send troops from the map to create reports.</p>
+            <p class="muted">No reports match this filter.</p>
         {% endfor %}
     </div>
 </section>
+{% if page_count > 1 %}
+<nav class="panel compact-panel report-filters" aria-label="Report pages">
+    {% if page > 1 %}<a class="report-filter" href="{{ url_for('inbox', filter=report_filter, page=page-1) }}">Newer reports</a>{% endif %}
+    <span>Page {{ page }} of {{ page_count }}</span>
+    {% if page < page_count %}<a class="report-filter" href="{{ url_for('inbox', filter=report_filter, page=page+1) }}">Older reports</a>{% endif %}
+</nav>
+{% endif %}
 {% endblock %}

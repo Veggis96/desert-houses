@@ -4345,6 +4345,8 @@ def inbox():
     report_filter = request.args.get("filter", "all")
     if report_filter not in {"all", "scout", "raid", "unread"}:
         report_filter = "all"
+    page = request.args.get("page", 1, type=int) or 1
+    page_size = 20
     with get_db() as db:
         user = get_current_user(db)
         clauses = ["battle_reports.user_id = ?"]
@@ -4354,16 +4356,21 @@ def inbox():
             params.append(report_filter)
         elif report_filter == "unread":
             clauses.append("battle_reports.is_read = 0")
+        total_reports = db.execute(
+            f"SELECT COUNT(*) FROM battle_reports WHERE {' AND '.join(clauses)}", params
+        ).fetchone()[0]
+        page_count = max(1, (total_reports + page_size - 1) // page_size)
+        page = max(1, min(page, page_count))
         reports = db.execute(
             f"""
             SELECT battle_reports.*, villages.name AS village_name
             FROM battle_reports
             JOIN villages ON villages.id = battle_reports.village_id
             WHERE {' AND '.join(clauses)}
-            ORDER BY battle_reports.created_at DESC
-            LIMIT 100
+            ORDER BY battle_reports.created_at DESC, battle_reports.id DESC
+            LIMIT ? OFFSET ?
             """,
-            params,
+            params + [page_size, (page - 1) * page_size],
         ).fetchall()
         filter_counts = {
             "all": db.execute("SELECT COUNT(*) AS count FROM battle_reports WHERE user_id = ?", (user["id"],)).fetchone()["count"],
@@ -4372,7 +4379,7 @@ def inbox():
             "unread": db.execute("SELECT COUNT(*) AS count FROM battle_reports WHERE user_id = ? AND is_read = 0", (user["id"],)).fetchone()["count"],
         }
     report_summaries = {report["id"]: report_summary(report) for report in reports}
-    return render_template("inbox.html", reports=reports, report_summaries=report_summaries, report_filter=report_filter, filter_counts=filter_counts)
+    return render_template("inbox.html", reports=reports, report_summaries=report_summaries, report_filter=report_filter, filter_counts=filter_counts, page=page, page_count=page_count, total_reports=total_reports)
 
 
 @app.route("/inbox/mark-read", methods=("POST",))
